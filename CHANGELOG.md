@@ -1,4 +1,4 @@
-# 1.2
+# 1.2.14 (2026-06-01)
 
 - Fixed mode switching (e.g. auto → plan) becoming unreliable when Claude Code is actively working: the edit-mode selector now correctly reaches the target mode without overshooting
 - Fixed stale model aliases from a "Claude Compatible API" profile still showing in the model selector after switching the profile to "Managed by Claude"
