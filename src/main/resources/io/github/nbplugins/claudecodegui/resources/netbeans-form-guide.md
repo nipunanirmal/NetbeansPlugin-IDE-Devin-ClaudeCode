@@ -1030,8 +1030,223 @@ public class MyFrame extends javax.swing.JFrame {
 - [ ] `JScrollPane` children use `JScrollPaneSupportLayout` + `autoScrollPane` AuxValue
 - [ ] `JTabbedPane` children use `JTabbedPaneSupportLayout` + `JTabbedPaneConstraints` with `tabTitle`
 - [ ] `EtchedBorder` uses `<EtchetBorder/>` (typo in NetBeans source — intentional)
+- [ ] **NEVER put `<!-- ... -->` XML comments anywhere in the `.form` file** — causes `PersistenceException: Missing attributes of component element` (see Section 23)
+- [ ] Every child of a `DesignGridBagLayout` container has a full `<Constraints><GridBagConstraints .../>` block — without this, design view collapses all items into one row (see Section 24)
+- [ ] Design view = runtime: all fonts/colors/borders/sizes declared in `.form`; GridBagConstraints in `.form` AND `setupComponents()`; ComboBox models / custom TableModel / cell editors only in `setupComponents()`
+- [ ] After writing `.form`, verify no comments: `Select-String -Path "*.form" -Pattern "<!--"` — must return no matches
 - [ ] Call `mcp0_openFile` (NetBeans MCP tool) to open `.java` in NetBeans after creation
 - [ ] User closes and reopens the tab in NetBeans to load Design view fresh
+
+---
+
+## 23. ⚠️ CRITICAL: No XML Comments Inside .form Files
+
+**XML comments (`<!-- ... -->`) inside `.form` files cause `PersistenceException: Missing attributes of component element` and the Design view will fail to load.**
+
+### Root cause (from NetBeans source `GandalfPersistenceManager.java`)
+
+The parser iterates `childNodes` and calls `restoreComponent()` on every node. It skips `TEXT_NODE` but does **not** skip `COMMENT_NODE`. A comment node returns `null` from `getAttributes()`, which immediately triggers the exception:
+
+```java
+// From GandalfPersistenceManager.restoreComponent():
+org.w3c.dom.NamedNodeMap attrs = node.getAttributes();
+if (attrs == null) {  // comment nodes hit this — they have no attributes
+    throw new PersistenceException("Missing attributes of component element");
+}
+```
+
+### Rule
+
+**NEVER put `<!-- ... -->` comments anywhere inside a `.form` file.** Not inside `<SubComponents>`, not inside `<Properties>`, not anywhere. The file must be comment-free.
+
+**❌ WRONG — causes PersistenceException:**
+```xml
+<SubComponents>
+  <!-- This is the toolbar -->
+  <Container class="javax.swing.JPanel" name="pnlToolbar">
+    ...
+  </Container>
+</SubComponents>
+```
+
+**✅ CORRECT — no comments at all:**
+```xml
+<SubComponents>
+  <Container class="javax.swing.JPanel" name="pnlToolbar">
+    ...
+  </Container>
+</SubComponents>
+```
+
+### Verification command
+After writing any `.form` file, always verify:
+```powershell
+Select-String -Path "MyPanel.form" -Pattern "<!--"
+# Must return NO matches
+```
+
+---
+
+## 24. GridBagLayout in .form — Constraints Are Mandatory
+
+When a container uses `DesignGridBagLayout`, every child component **must** declare a full `<Constraints>` block with `<GridBagConstraints>`. Without constraints, the design view puts all components in a single row with default positions — completely different from the runtime appearance where `setupComponents()` applies the real `GridBagConstraints`.
+
+### Rule
+
+**Every child of a `DesignGridBagLayout` container must have explicit `<Constraints>` in the `.form`, matching exactly the `gbc.gridx / gbc.gridy / gbc.fill / gbc.weightx / gbc.insets` values in `setupComponents()`.**
+
+### Full working pattern — vertical stack (single-column GridBag)
+
+```xml
+<Container class="javax.swing.JPanel" name="myPanel">
+  <Layout class="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout"/>
+  <SubComponents>
+
+    <Component class="javax.swing.JLabel" name="lblTitle">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Title:"/>
+      </Properties>
+      <Constraints>
+        <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout"
+                    value="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout$GridBagConstraintsDescription">
+          <GridBagConstraints gridX="0" gridY="0" gridWidth="1" gridHeight="1"
+                              fill="2" ipadX="0" ipadY="0"
+                              insetsTop="8" insetsLeft="10" insetsBottom="8" insetsRight="10"
+                              anchor="17" weightX="1.0" weightY="0.0"/>
+        </Constraint>
+      </Constraints>
+    </Component>
+
+    <Component class="javax.swing.JTextField" name="txtValue">
+      <Constraints>
+        <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout"
+                    value="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout$GridBagConstraintsDescription">
+          <GridBagConstraints gridX="0" gridY="1" gridWidth="1" gridHeight="1"
+                              fill="2" ipadX="0" ipadY="0"
+                              insetsTop="8" insetsLeft="10" insetsBottom="8" insetsRight="10"
+                              anchor="17" weightX="1.0" weightY="0.0"/>
+        </Constraint>
+      </Constraints>
+    </Component>
+
+  </SubComponents>
+</Container>
+```
+
+### GridBagConstraints attribute quick reference
+
+| Attribute | Meaning | Common values |
+|-----------|---------|---------------|
+| `gridX` | Column | `0` = first column |
+| `gridY` | Row | `0`, `1`, `2`... each component one row down |
+| `gridWidth` | Columns spanned | `1` = single column |
+| `gridHeight` | Rows spanned | `1` = single row |
+| `fill` | Fill direction | `0`=NONE, `1`=BOTH, `2`=HORIZONTAL, `3`=VERTICAL |
+| `weightX` | Horizontal grow | `1.0` = fill panel width; `0.0` = don't grow |
+| `weightY` | Vertical grow | `1.0` = fill; `0.0` = shrink to content |
+| `anchor` | Alignment | `10`=CENTER, `13`=WEST, `17`=EAST, `11`=NORTH, `15`=SOUTH |
+| `insetsTop/Left/Bottom/Right` | Padding in pixels | e.g. `8` / `10` / `8` / `10` |
+
+### Multi-column row (combo + textfield + label side by side)
+
+```xml
+<Component class="javax.swing.JComboBox" name="cmbMode">
+  <Constraints>
+    <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout"
+                value="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout$GridBagConstraintsDescription">
+      <GridBagConstraints gridX="0" gridY="0" gridWidth="1" gridHeight="1"
+                          fill="2" ipadX="0" ipadY="0"
+                          insetsTop="0" insetsLeft="0" insetsBottom="0" insetsRight="4"
+                          anchor="17" weightX="0.5" weightY="0.0"/>
+    </Constraint>
+  </Constraints>
+</Component>
+<Component class="javax.swing.JTextField" name="txtAmount">
+  <Constraints>
+    <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout"
+                value="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout$GridBagConstraintsDescription">
+      <GridBagConstraints gridX="1" gridY="0" gridWidth="1" gridHeight="1"
+                          fill="2" ipadX="0" ipadY="0"
+                          insetsTop="0" insetsLeft="0" insetsBottom="0" insetsRight="4"
+                          anchor="17" weightX="0.3" weightY="0.0"/>
+    </Constraint>
+  </Constraints>
+</Component>
+<Component class="javax.swing.JLabel" name="lblResult">
+  <Constraints>
+    <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout"
+                value="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout$GridBagConstraintsDescription">
+      <GridBagConstraints gridX="2" gridY="0" gridWidth="1" gridHeight="1"
+                          fill="2" ipadX="0" ipadY="0"
+                          insetsTop="0" insetsLeft="4" insetsBottom="0" insetsRight="0"
+                          anchor="17" weightX="0.2" weightY="0.0"/>
+    </Constraint>
+  </Constraints>
+</Component>
+```
+
+### Vertical filler (push all rows to top)
+
+Add as the last child with `weightY="1.0"` and `fill="1"` (BOTH):
+
+```xml
+<Component class="javax.swing.JPanel" name="fillerPanel">
+  <Constraints>
+    <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout"
+                value="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout$GridBagConstraintsDescription">
+      <GridBagConstraints gridX="0" gridY="13" gridWidth="1" gridHeight="1"
+                          fill="1" ipadX="0" ipadY="0"
+                          insetsTop="0" insetsLeft="0" insetsBottom="0" insetsRight="0"
+                          anchor="10" weightX="1.0" weightY="1.0"/>
+    </Constraint>
+  </Constraints>
+</Component>
+```
+
+Java equivalent in `setupComponents()`:
+```java
+java.awt.GridBagConstraints gbcFill = new java.awt.GridBagConstraints();
+gbcFill.gridx = 0; gbcFill.gridy = 13;
+gbcFill.weightx = 1.0; gbcFill.weighty = 1.0;
+gbcFill.fill = java.awt.GridBagConstraints.BOTH;
+myPanel.add(new javax.swing.JPanel(), gbcFill);
+```
+
+---
+
+## 25. Design View vs Runtime — Sync Rules
+
+When a panel uses `setupComponents()` for layout wiring (GridBagConstraints, ComboBox models, custom TableModel, borders, fonts, colors), the **Design view only shows what is declared in the `.form` and `initComponents()` GEN block**. `setupComponents()` is never executed at design time.
+
+### What goes where
+
+| Property | In `.form` + `initComponents()` GEN block | In `setupComponents()` only |
+|----------|------------------------------------------|----------------------------|
+| Fonts, colors, borders, text, preferred sizes | ✅ Yes | Also fine here |
+| `GridBagConstraints` wiring | ✅ Yes (as `<Constraints>` in `.form`) | Also required here |
+| `JComboBox.setModel(...)` | ❌ Never | ✅ Yes |
+| Custom `TableModel` subclass | ❌ Never | ✅ Yes |
+| `DefaultTableModel` (anonymous subclass with `isCellEditable`) | ✅ Yes (in GEN block) | Optional |
+| Cell editors / cell renderers | ❌ Never | ✅ Yes |
+| `KeyListener` on `JComboBox` for Enter-key navigation | ❌ Never | ✅ Yes |
+| Filler `JPanel` for GridBag vertical push | ✅ As `<Component class="javax.swing.JPanel">` in `.form` | Also required |
+
+### Golden rule
+
+**The `.form` + `initComponents()` GEN block must alone produce a design view that looks identical to the runtime.** Every visual property that contributes to layout or appearance must be declared in both places. `setupComponents()` is for things the GEN block forbids (custom instances, GridBagConstraints objects, ComboBox models) — not for styling.
+
+### Variables block must be alphabetically sorted
+
+The `GEN-BEGIN:variables` block must list all variables in **alphabetical order**. NetBeans enforces this when it regenerates the block. Mismatch causes sync errors.
+
+```java
+// Variables declaration - do not modify//GEN-BEGIN:variables
+private javax.swing.JButton btnAddRow;
+private javax.swing.JButton btnCheckout;
+private javax.swing.JButton btnClearAll;
+// ... alphabetical order ...
+// End of variables declaration//GEN-END:variables
+```
 
 ---
 
