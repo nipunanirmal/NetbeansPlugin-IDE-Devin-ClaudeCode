@@ -1250,6 +1250,134 @@ private javax.swing.JButton btnClearAll;
 
 ---
 
+## 26. JToolBar — Design View Hard Limitation
+
+### ⚠️ NetBeans Matisse CANNOT add children to JToolBar visually
+
+This is a confirmed NetBeans GUI builder limitation. The Matisse editor treats `JToolBar` as a **leaf component** (`<Component>` tag), not a container (`<Container>` tag). If you manually add `<SubComponents>` inside a `<Component class="javax.swing.JToolBar">` in the `.form` XML, **NetBeans will strip them out the next time it touches the file**.
+
+**There is no way to see toolbar buttons in the Design view.** The toolbar will always appear empty in design view.
+
+### Correct pattern — NonVisualComponents + setupToolBar()
+
+Declare the button variables as `<NonVisualComponents>` in the `.form` so NetBeans generates the field declarations in the GEN variables block. Build the actual toolbar entirely in `setupToolBar()` using those variables.
+
+**In `.form` — declare buttons as NonVisualComponents:**
+```xml
+<NonVisualComponents>
+  <Component class="javax.swing.JButton" name="btnDashboard">
+    <Properties>
+      <Property name="text" type="java.lang.String" value="Dashboard"/>
+    </Properties>
+  </Component>
+  <Component class="javax.swing.JButton" name="btnPos">
+    <Properties>
+      <Property name="text" type="java.lang.String" value="POS"/>
+    </Properties>
+  </Component>
+</NonVisualComponents>
+```
+
+**In GEN block `initComponents()`** — NetBeans auto-generates instantiation + setText only (no add to toolbar):
+```java
+btnDashboard = new javax.swing.JButton();
+btnPos = new javax.swing.JButton();
+btnDashboard.setText("Dashboard");
+btnPos.setText("POS");
+```
+
+**In `setupToolBar()`** — full toolbar construction using the GEN-declared variables:
+```java
+private void setupToolBar() {
+    toolBar.removeAll();  // safe — toolbar has no children from GEN
+    toolBar.setBackground(new java.awt.Color(15, 76, 129));
+    toolBar.setFloatable(false);
+
+    javax.swing.JButton[] navBtns = {btnDashboard, btnPos};
+    for (int i = 0; i < navBtns.length; i++) {
+        navBtns[i].setForeground(java.awt.Color.WHITE);
+        navBtns[i].setOpaque(false);
+        navBtns[i].setContentAreaFilled(false);
+        toolBar.add(navBtns[i]);
+        if (i < navBtns.length - 1) {
+            javax.swing.JSeparator sep = new javax.swing.JSeparator(javax.swing.JSeparator.VERTICAL);
+            sep.setMaximumSize(new java.awt.Dimension(1, 24));
+            toolBar.add(sep);
+        }
+    }
+    toolBar.add(javax.swing.Box.createHorizontalGlue());
+}
+```
+
+### Why this is the right pattern
+- Variables are generated in the GEN variables block from `<NonVisualComponents>` — compiler is happy.
+- `setupToolBar()` uses `removeAll()` which is safe because GEN never added anything to the toolbar.
+- NetBeans never touches the toolbar children because there are none declared.
+- **The toolbar will be empty/grey in design view — this is unavoidable.** Do NOT attempt to put toolbar buttons as `<SubComponents>` of `<Component class="javax.swing.JToolBar">` — NetBeans will delete them.
+
+---
+
+## 27. JFrame windowClosing Event
+
+To wire a `windowClosing` handler so the Design view knows about it, declare it in the `<Events>` block on the **root `<Form>` element**, not on a sub-component:
+
+```xml
+<Form version="1.3" ...>
+  <Properties>...</Properties>
+  <Events>
+    <EventHandler event="windowClosing" listener="java.awt.event.WindowListener"
+                  parameters="java.awt.event.WindowEvent" handler="formWindowClosing"/>
+  </Events>
+  ...
+</Form>
+```
+
+In the GEN block, this generates:
+```java
+addWindowListener(new java.awt.event.WindowAdapter() {
+    public void windowClosing(java.awt.event.WindowEvent evt) {
+        formWindowClosing(evt);
+    }
+});
+```
+
+And the standalone handler:
+```java
+private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+    confirmExit();
+}//GEN-LAST:event_formWindowClosing
+```
+
+> If `DO_NOTHING_ON_CLOSE` + `windowClosing` handler is NOT declared in `.form`, the Design view won't show the event wiring, and NetBeans may regenerate the GEN block without the `addWindowListener` call.
+
+---
+
+## 28. BorderLayout and GridBagLayout XML Reference
+
+### BorderLayout
+```xml
+<Layout class="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout"/>
+```
+Constraint: `<BorderConstraints direction="Center"/>` (values: `Center`, `North`, `South`, `East`, `West`)
+
+### GridBagLayout
+```xml
+<Layout class="org.netbeans.modules.form.compat2.layouts.DesignGridBagLayout"/>
+```
+Constraint:
+```xml
+<GridBagConstraints gridX="-1" gridY="-1" gridWidth="1" gridHeight="1"
+                    fill="2" ipadX="0" ipadY="0"
+                    insetsTop="0" insetsLeft="0" insetsBottom="6" insetsRight="6"
+                    anchor="17" weightX="0.0" weightY="0.0"/>
+```
+`fill`: `0`=NONE, `1`=BOTH, `2`=HORIZONTAL, `3`=VERTICAL
+`anchor`: `10`=CENTER, `17`=EAST, `13`=WEST, `11`=NORTH, `15`=SOUTH
+
+> **Important:** GridBagConstraints objects must be created in `setupComponents()`, not inside the GEN block.
+
+---
+
 ## 22. Useful NetBeans MCP Tools
 
 | Tool | When to use |
