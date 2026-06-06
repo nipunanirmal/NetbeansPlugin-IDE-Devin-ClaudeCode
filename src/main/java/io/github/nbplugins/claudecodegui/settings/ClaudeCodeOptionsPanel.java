@@ -109,6 +109,8 @@ public final class ClaudeCodeOptionsPanel extends JPanel {
     private JSpinner hangTimeoutSpinner;
     /** Checkbox to enable MCP integration (pass --mcp-config flag). */
     private javax.swing.JCheckBox mcpEnabledCheckBox;
+    /** Dropdown for the CLI type (Claude Code or Devin). */
+    private javax.swing.JComboBox<String> cliTypeCombo;
 
     /** send-key radio buttons: value → button */
     private final Map<String, JRadioButton> sendRadios = new LinkedHashMap<>();
@@ -312,10 +314,17 @@ public final class ClaudeCodeOptionsPanel extends JPanel {
         JPanel form = new JPanel(new GridBagLayout());
         int row = 0;
 
+        // --- CLI type ---
+        form.add(new JLabel("CLI type:"), gbc(0, row, false));
+        cliTypeCombo = new javax.swing.JComboBox<>(new String[]{"Claude Code (claude)", "Devin (devin)"});
+        cliTypeCombo.setToolTipText("Select the AI CLI to use: Claude Code or Devin");
+        form.add(cliTypeCombo, gbc(1, row, false));
+        row++;
+
         // --- executable path ---
-        form.add(new JLabel("Claude CLI path:"), gbc(0, row, false));
+        form.add(new JLabel("CLI executable path:"), gbc(0, row, false));
         executablePathField = new JTextField(30);
-        executablePathField.setToolTipText("Leave empty to detect 'claude' from PATH");
+        executablePathField.setToolTipText("Leave empty to auto-detect from PATH");
         form.add(executablePathField, gbcFill(1, row));
         JButton browseButton = new JButton("Browse\u2026");
         browseButton.addActionListener(e -> {
@@ -491,6 +500,8 @@ public final class ClaudeCodeOptionsPanel extends JPanel {
         choiceMenuFocusCombo.setSelectedIndex(focusIdx >= 0 ? focusIdx : 0);
         hangTimeoutSpinner.setValue(ClaudeCodePreferences.getHangTimeoutSeconds());
         mcpEnabledCheckBox.setSelected(ClaudeCodePreferences.isMcpEnabled());
+        cliTypeCombo.setSelectedIndex(
+                ClaudeCodePreferences.isDevinCli() ? 1 : 0);
 
         String sendVal    = ClaudeCodePreferences.getSendKey();
         String newlineVal = ClaudeCodePreferences.getNewlineKey();
@@ -537,6 +548,13 @@ public final class ClaudeCodeOptionsPanel extends JPanel {
                         ? CHOICE_MENU_FOCUS_VALUES[focusSel]
                         : ClaudeCodePreferences.DEFAULT_CHOICE_MENU_FOCUS_MODE);
         ClaudeCodePreferences.setHangTimeoutSeconds((Integer) hangTimeoutSpinner.getValue());
+        String newCliType = cliTypeCombo.getSelectedIndex() == 1
+                        ? ClaudeCodePreferences.CLI_TYPE_DEVIN
+                        : ClaudeCodePreferences.CLI_TYPE_CLAUDE;
+        if (!newCliType.equals(ClaudeCodePreferences.getCliType())) {
+            ClaudeCodePreferences.setClaudeExecutablePath("");
+        }
+        ClaudeCodePreferences.setCliType(newCliType);
         ClaudeCodePreferences.setMcpEnabled(mcpEnabledCheckBox.isSelected());
         ClaudeCodePreferences.setSendKey(selectedValue(sendRadios));
         ClaudeCodePreferences.setNewlineKey(selectedValue(newlineRadios));

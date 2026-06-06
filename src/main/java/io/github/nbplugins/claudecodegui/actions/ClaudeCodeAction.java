@@ -1,5 +1,6 @@
 package io.github.nbplugins.claudecodegui.actions;
 
+import io.github.nbplugins.claudecodegui.settings.ClaudeCodePreferences;
 import io.github.nbplugins.claudecodegui.ui.ClaudeSessionTab;
 import java.awt.event.ActionEvent;
 import javax.swing.AbstractAction;
@@ -28,13 +29,17 @@ import org.openide.util.NbBundle.Messages;
 @Messages("CTL_ClaudeCodeAction=Claude Code")
 public final class ClaudeCodeAction extends AbstractAction {
 
-    private static final String ICON_PATH = "io/github/nbplugins/claudecodegui/icons/claude-icon-32.png";
+    private static final String ICON_CLAUDE = "io/github/nbplugins/claudecodegui/icons/claude-icon-32.png";
+    private static final String ICON_DEVIN  = "io/github/nbplugins/claudecodegui/icons/devin-icon-32.png";
 
-    /** Constructs the action and sets the toolbar icon. */
+    /** Constructs the action and sets the toolbar icon based on the configured CLI type. */
     public ClaudeCodeAction() {
-        putValue("iconBase", ICON_PATH);
-        putValue(SMALL_ICON, ImageUtilities.loadImageIcon(ICON_PATH, false));
-        putValue(SHORT_DESCRIPTION, "Claude Code");
+        boolean devin = ClaudeCodePreferences.isDevinCli();
+        String iconPath = devin ? ICON_DEVIN : ICON_CLAUDE;
+        String label    = devin ? "Devin" : "Claude Code";
+        putValue("iconBase", iconPath);
+        putValue(SMALL_ICON, ImageUtilities.loadImageIcon(iconPath, false));
+        putValue(SHORT_DESCRIPTION, label);
     }
 
     @Override

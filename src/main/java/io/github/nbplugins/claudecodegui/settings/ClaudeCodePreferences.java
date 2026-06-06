@@ -67,12 +67,13 @@ public final class ClaudeCodePreferences {
     }
 
     /**
-     * Returns the {@code claude} executable to use.
+     * Returns the CLI executable to use.
      *
      * <p>Uses the stored path when non-empty; otherwise searches {@code PATH},
-     * stores the result for future calls, and falls back to {@code "claude"}.
+     * stores the result for future calls, and falls back to the default name
+     * for the configured CLI type.
      *
-     * @return resolved executable path or {@code "claude"}
+     * @return resolved executable path or default CLI name
      */
     public static String resolveClaudeExecutable() {
         String stored = getClaudeExecutablePath();
@@ -84,20 +85,29 @@ public final class ClaudeCodePreferences {
             setClaudeExecutablePath(found);
             return found;
         }
-        return "claude";
+        return isDevinCli() ? "devin" : "claude";
     }
 
     /**
-     * Searches the system {@code PATH} for the {@code claude} executable.
+     * Searches the system {@code PATH} for the configured CLI executable
+     * (claude or devin, depending on the {@code cliType} preference).
      *
      * @return absolute path, or {@code null} if not found
      */
     static String findOnPath() {
         boolean isWindows = System.getProperty("os.name", "")
                 .toLowerCase().contains("win");
-        String[] candidates = isWindows
-                ? new String[]{"claude.cmd", "claude.exe", "claude"}
-                : new String[]{"claude"};
+        boolean devin = isDevinCli();
+        String[] candidates;
+        if (devin) {
+            candidates = isWindows
+                    ? new String[]{"devin.exe", "devin.cmd", "devin"}
+                    : new String[]{"devin"};
+        } else {
+            candidates = isWindows
+                    ? new String[]{"claude.cmd", "claude.exe", "claude"}
+                    : new String[]{"claude"};
+        }
         String locator = isWindows ? "where" : "which";
         for (String candidate : candidates) {
             try {
@@ -814,6 +824,48 @@ public final class ClaudeCodePreferences {
     public static void setChoiceMenuFocusMode(String mode) {
         NbPreferences.forModule(ClaudeCodePreferences.class)
                 .put(KEY_CHOICE_MENU_FOCUS_MODE, mode != null ? mode : DEFAULT_CHOICE_MENU_FOCUS_MODE);
+    }
+
+    // -------------------------------------------------------------------------
+    // cliType
+    // -------------------------------------------------------------------------
+
+    /** Preference key: which AI CLI to invoke. */
+    public static final String KEY_CLI_TYPE = "cliType";
+    /** Value: use Claude Code CLI ({@code claude}). */
+    public static final String CLI_TYPE_CLAUDE = "claude";
+    /** Value: use Devin CLI ({@code devin}). */
+    public static final String CLI_TYPE_DEVIN  = "devin";
+    /** Default: Claude Code. */
+    public static final String DEFAULT_CLI_TYPE = CLI_TYPE_CLAUDE;
+
+    /**
+     * Returns the configured CLI type string.
+     *
+     * @return {@link #CLI_TYPE_CLAUDE} or {@link #CLI_TYPE_DEVIN}
+     */
+    public static String getCliType() {
+        return NbPreferences.forModule(ClaudeCodePreferences.class)
+                .get(KEY_CLI_TYPE, DEFAULT_CLI_TYPE);
+    }
+
+    /**
+     * Persists the CLI type.
+     *
+     * @param type {@link #CLI_TYPE_CLAUDE} or {@link #CLI_TYPE_DEVIN}
+     */
+    public static void setCliType(String type) {
+        NbPreferences.forModule(ClaudeCodePreferences.class)
+                .put(KEY_CLI_TYPE, CLI_TYPE_DEVIN.equals(type) ? CLI_TYPE_DEVIN : CLI_TYPE_CLAUDE);
+    }
+
+    /**
+     * Convenience method: returns {@code true} when the active CLI is Devin.
+     *
+     * @return {@code true} if Devin CLI is selected
+     */
+    public static boolean isDevinCli() {
+        return CLI_TYPE_DEVIN.equals(getCliType());
     }
 
     private static String validated(String value, String fallback) {

@@ -1,5 +1,6 @@
 package org.openbeans.claude.netbeans;
 
+import io.github.nbplugins.claudecodegui.settings.ClaudeCodePreferences;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.awt.ActionRegistration;
@@ -30,6 +31,7 @@ public final class ClaudeCodeAction implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
+        String cliLabel = ClaudeCodePreferences.isDevinCli() ? "Devin" : "Claude Code";
         try {
             // Get the status service from global lookup
             ClaudeCodeStatusService statusService = Lookup.getDefault().lookup(ClaudeCodeStatusService.class);
@@ -42,24 +44,24 @@ public final class ClaudeCodeAction implements ActionListener {
                     status,
                     NotifyDescriptor.INFORMATION_MESSAGE
                 );
-                msg.setTitle("Claude Code Integration Status");
+                msg.setTitle(cliLabel + " Integration Status");
                 DialogDisplayer.getDefault().notify(msg);
             } else {
                 // Service not available
                 NotifyDescriptor.Message error = new NotifyDescriptor.Message(
-                    "Claude Code integration is not running or not properly initialized.",
+                    cliLabel + " integration is not running or not properly initialized.",
                     NotifyDescriptor.WARNING_MESSAGE
                 );
-                error.setTitle("Claude Code Not Available");
+                error.setTitle(cliLabel + " Not Available");
                 DialogDisplayer.getDefault().notify(error);
             }
             
         } catch (Exception ex) {
             NotifyDescriptor.Message error = new NotifyDescriptor.Message(
-                "Error getting Claude Code status: " + ex.getMessage(),
+                "Error getting " + cliLabel + " status: " + ex.getMessage(),
                 NotifyDescriptor.ERROR_MESSAGE
             );
-            error.setTitle("Claude Code Error");
+            error.setTitle(cliLabel + " Error");
             DialogDisplayer.getDefault().notify(error);
         }
     }

@@ -192,37 +192,49 @@ public final class ClaudeProcess {
                 + ", sessionMode=" + mode
                 + (mode == SessionMode.RESUME_SPECIFIC ? ", resumeId=" + resumeSessionId : ""));
 
+        boolean devinCli = io.github.nbplugins.claudecodegui.settings.ClaudeCodePreferences.isDevinCli();
+
         List<String> cmd = new ArrayList<>();
         cmd.add(executable);
         ClaudeCodeStatusService mcp = Lookup.getDefault().lookup(ClaudeCodeStatusService.class);
         LOG.info("MCP service lookup: " + (mcp == null ? "null" : mcp.getClass().getName())
                 + ", running=" + (mcp != null && mcp.isServerRunning())
-                + ", port=" + (mcp != null ? mcp.getServerPort() : -1));
+                + ", port=" + (mcp != null ? mcp.getServerPort() : -1)
+                + ", cliType=" + (devinCli ? "devin" : "claude"));
         if (mcp != null && mcp.isServerRunning()) {
             int port = mcp.getServerPort();
             if (io.github.nbplugins.claudecodegui.settings.ClaudeCodePreferences.isMcpEnabled()) {
-                // Pass MCP server config via --mcp-config (Claude 2.x no longer reads
-                // mcpServers from settings.local.json; --mcp-config works in TUI mode).
-                // On Windows, inline JSON gets quote-stripped by CreateProcess, so we
-                // write to a temp file and pass the file path instead.
-                cmd.add("--mcp-config");
-                try {
-                    Path tmpCfg = writeMcpConfigTempFile(port);
-                    mcpConfigTempFile = tmpCfg;
-                    cmd.add(tmpCfg.toAbsolutePath().toString());
-                    LOG.info("Passing --mcp-config via temp file: " + tmpCfg);
-                } catch (IOException e) {
-                    LOG.warning("Could not write --mcp-config temp file, falling back to inline JSON: " + e.getMessage());
-                    cmd.add(buildMcpConfigJson(port));
-                    LOG.info("Passing --mcp-config with netbeans SSE server on port " + port);
+                if (devinCli) {
+                    // Devin registers MCP servers persistently via 'devin mcp add'.
+                    // The --config flag replaces the entire user config, so we must NOT
+                    // pass it here. The user registers the netbeans server once with:
+                    //   devin mcp add netbeans http://127.0.0.1:<port>/sse
+                    LOG.info("Devin CLI: MCP is registered persistently via 'devin mcp add'; skipping config flag. Port: " + port);
+                } else {
+                    // Claude uses --mcp-config <PATH>.
+                    // On Windows, inline JSON gets quote-stripped by CreateProcess, so we
+                    // write to a temp file and pass the file path instead.
+                    cmd.add("--mcp-config");
+                    try {
+                        Path tmpCfg = writeMcpConfigTempFile(port);
+                        mcpConfigTempFile = tmpCfg;
+                        cmd.add(tmpCfg.toAbsolutePath().toString());
+                        LOG.info("Passing --mcp-config via temp file: " + tmpCfg);
+                    } catch (IOException e) {
+                        LOG.warning("Could not write --mcp-config temp file, falling back to inline JSON: " + e.getMessage());
+                        cmd.add(buildMcpConfigJson(port));
+                        LOG.info("Passing --mcp-config with netbeans SSE server on port " + port);
+                    }
                 }
             } else {
-                LOG.info("MCP integration disabled by user preference; skipping --mcp-config");
+                LOG.info("MCP integration disabled by user preference; skipping MCP config flag");
             }
-            try {
-                writeSettingsLocalJson(workingDir, port, profile);
-            } catch (IOException e) {
-                LOG.warning("Could not write .claude/settings.local.json: " + e.getMessage());
+            if (!devinCli) {
+                try {
+                    writeSettingsLocalJson(workingDir, port, profile);
+                } catch (IOException e) {
+                    LOG.warning("Could not write .claude/settings.local.json: " + e.getMessage());
+                }
             }
         }
 
@@ -284,16 +296,23 @@ public final class ClaudeProcess {
             LOG.info("Extra CLI args appended: " + extra);
         }
 
+        boolean isDevin = io.github.nbplugins.claudecodegui.settings.ClaudeCodePreferences.isDevinCli();
         if (mode == SessionMode.CONTINUE_LAST) {
-            String configDirStr = env.get("CLAUDE_CONFIG_DIR");
-            Path claudeConfigDir = configDirStr != null
-                    ? Path.of(configDirStr)
-                    : Path.of(System.getProperty("user.home"), ".claude");
-            if (ClaudeSessionStore.hasAnySessions(Path.of(workingDir), claudeConfigDir)) {
+            if (isDevin) {
+                // Devin manages its own session store; skip the Claude session check.
                 cmd.add("--continue");
-                LOG.fine("Session mode: --continue (existing session found)");
+                LOG.fine("Session mode: --continue (devin, no session check)");
             } else {
-                LOG.fine("Session mode: CONTINUE_LAST — no sessions found, starting new");
+                String configDirStr = env.get("CLAUDE_CONFIG_DIR");
+                Path claudeConfigDir = configDirStr != null
+                        ? Path.of(configDirStr)
+                        : Path.of(System.getProperty("user.home"), ".claude");
+                if (ClaudeSessionStore.hasAnySessions(Path.of(workingDir), claudeConfigDir)) {
+                    cmd.add("--continue");
+                    LOG.fine("Session mode: --continue (existing session found)");
+                } else {
+                    LOG.fine("Session mode: CONTINUE_LAST — no sessions found, starting new");
+                }
             }
         } else if (mode == SessionMode.RESUME_SPECIFIC
                 && resumeSessionId != null && !resumeSessionId.isBlank()) {

@@ -128,8 +128,8 @@
 
                                 def svg = new File(project.basedir,
                                     'src/main/resources/io/github/nbplugins/claudecodegui/icons/cc-gui-icon.svg')
-                                def out = new File(project.build.outputDirectory,
-                                    'io/github/nbplugins/claudecodegui/icons')
+                                def out = new File(project.basedir,
+                                    'src/main/resources/io/github/nbplugins/claudecodegui/icons')
                                 out.mkdirs()
 
                                 [['claude-icon.png', 16f], ['claude-icon-32.png', 32f]].each { name, size ->
@@ -141,6 +141,37 @@
                                                 new TranscoderOutput(os))
                                     os.close()
                                     log.info("Generated ${name} (${size as int}px)")
+                                }
+                            </source>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-devin-icons</id>
+                        <phase>generate-resources</phase>
+                        <goals><goal>execute</goal></goals>
+                        <configuration>
+                            <source>
+                                import javax.imageio.ImageIO
+                                import java.awt.RenderingHints
+                                import java.awt.image.BufferedImage
+
+                                File srcFile = new File(project.basedir.toString(),
+                                    'src/main/resources/io/github/nbplugins/claudecodegui/icons/devin-icon-source.png')
+                                File outDir = new File(project.basedir.toString(),
+                                    'src/main/resources/io/github/nbplugins/claudecodegui/icons')
+                                outDir.mkdirs()
+
+                                BufferedImage original = ImageIO.read(srcFile)
+                                [['devin-icon.png', 16], ['devin-icon-32.png', 32]].each { pair ->
+                                    String iconName = pair[0]
+                                    int size = pair[1]
+                                    BufferedImage scaled = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
+                                    def g = scaled.createGraphics()
+                                    g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+                                    g.drawImage(original, 0, 0, size, size, null)
+                                    g.dispose()
+                                    ImageIO.write(scaled, 'PNG', new File(outDir, iconName))
+                                    log.info('Generated devin icon: ' + iconName + ' (' + size + 'px)')
                                 }
                             </source>
                         </configuration>
@@ -157,6 +188,7 @@
                             <directory>src/main/resources</directory>
                             <excludes>
                                 <exclude>**/*.svg</exclude>
+                                <exclude>**/devin-icon-source.png</exclude>
                             </excludes>
                         </resource>
                     </resources>
