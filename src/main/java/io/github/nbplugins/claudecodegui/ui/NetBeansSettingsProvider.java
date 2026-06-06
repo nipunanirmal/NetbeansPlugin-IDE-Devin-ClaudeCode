@@ -68,6 +68,30 @@ final class NetBeansSettingsProvider extends DefaultSettingsProvider {
 
     @Override
     public com.jediterm.terminal.emulator.ColorPalette getTerminalColorPalette() {
-        return ColorPaletteImpl.XTERM_PALETTE;
+        return BRIGHT_YELLOW_PALETTE;
     }
+
+    private static final com.jediterm.core.Color YELLOW_BRIGHT =
+            new com.jediterm.core.Color(0xFF, 0xD7, 0x00);
+    private static final com.jediterm.core.Color YELLOW_INTENSE =
+            new com.jediterm.core.Color(0xFF, 0xFF, 0x5F);
+
+    private static final com.jediterm.terminal.emulator.ColorPalette BRIGHT_YELLOW_PALETTE =
+            new com.jediterm.terminal.emulator.ColorPalette() {
+                @Override
+                protected com.jediterm.core.Color getForegroundByColorIndex(int index) {
+                    if (index == 3)  return YELLOW_BRIGHT;
+                    if (index == 11) return YELLOW_INTENSE;
+                    return ColorPaletteImpl.XTERM_PALETTE.getForeground(
+                            com.jediterm.terminal.emulator.ColorPalette.getIndexedTerminalColor(index));
+                }
+
+                @Override
+                protected com.jediterm.core.Color getBackgroundByColorIndex(int index) {
+                    if (index == 3)  return YELLOW_BRIGHT;
+                    if (index == 11) return YELLOW_INTENSE;
+                    return ColorPaletteImpl.XTERM_PALETTE.getBackground(
+                            com.jediterm.terminal.emulator.ColorPalette.getIndexedTerminalColor(index));
+                }
+            };
 }
