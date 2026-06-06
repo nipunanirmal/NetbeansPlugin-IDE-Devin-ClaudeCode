@@ -1,4 +1,4 @@
-# Claude Code GUI — NetBeans Plugin
+# Claude Code GUI — NetBeans Plugin (+ Devin CLI fork)
 
 ![Build](https://github.com/nbplugins/NetbeansPluginClaudeCodeGui/actions/workflows/build.yml/badge.svg)
 [![Release](https://img.shields.io/github/v/release/nbplugins/NetbeansPluginClaudeCodeGui)](https://github.com/nbplugins/NetbeansPluginClaudeCodeGui/releases/latest)
@@ -6,7 +6,11 @@
 
 ![Overview](docs/screenshots/overview.png)
 
-NetBeans Claude Code GUI is a NetBeans IDE plugin that embeds the Claude Code CLI as a full interactive terminal session directly inside the IDE. You type prompts in a dedicated session tab, Claude reads and edits your project files, and the plugin provides:
+> **Don't use Claude Code? Using Devin, Cursor, or Windsurf instead?**
+> This fork adds **Devin CLI support** — see [Devin CLI Setup](#devin-cli-setup) below.
+> The MCP server also lets Cursor and Windsurf connect directly to NetBeans — see [Use NetBeans as an MCP Server](#use-netbeans-as-an-mcp-server-from-windsurf-cursor-or-vs-code).
+
+NetBeans Claude Code GUI is a NetBeans IDE plugin that embeds an AI CLI (Claude Code **or Devin**) as a full interactive terminal session directly inside the IDE. You type prompts in a dedicated session tab, the AI reads and edits your project files, and the plugin provides:
 
 - **Graphical file diff** — review every proposed file change before it is written to disk; accept, decline (with an optional reason), or interrupt Claude
 - **Interactive choice menu** — Claude's Yes/No and multiple-choice prompts appear as a native panel instead of raw terminal text
@@ -37,6 +41,45 @@ See [Installation & Build](docs/installation.md) for requirements, installation 
 
 ---
 
+## Devin CLI Setup
+
+> **This fork adds Devin CLI support.** The upstream project only supports Claude Code CLI. If you use **Devin**, follow these steps instead of the standard setup.
+
+### 1. Install the plugin
+
+Build from this fork and install the `.nbm` (see above), or build from source:
+
+```
+mvn clean package -DskipTests
+```
+
+Then install `target/nbm/netbeans-plugin-claude-code-gui-*.nbm` via **Tools → Plugins → Downloaded → Add Plugins…**
+
+### 2. Switch to Devin CLI in settings
+
+1. Open **Tools → Options → Claude Code → Advanced**
+2. Set **CLI type** to **Devin (devin)**
+3. Leave **CLI executable path** blank — the plugin auto-detects `devin` from your PATH
+4. Click **OK** and restart if prompted
+
+### 3. Register the NetBeans MCP server with Devin (once only)
+
+Unlike Claude Code (which accepts `--mcp-config` at startup), Devin stores MCP servers persistently. Run this once in a terminal — replace the port if you changed it from the default:
+
+```
+devin mcp add netbeans http://127.0.0.1:28991/sse
+```
+
+Verify with `devin mcp list` — you should see `netbeans` listed.
+
+### 4. Start a session
+
+Click the **Devin** toolbar button (or open the session tab) — `devin` will launch in the embedded terminal with the MCP server already connected.
+
+> **Note:** The MCP port (default `28991`) must match what the plugin is using. Check **Tools → Claude Code Status** to confirm the server is running and note the port.
+
+---
+
 ## Usage
 
 See the [User Manual](docs/user-manual.md) for full documentation of all plugin features.
@@ -45,7 +88,13 @@ See the [User Manual](docs/user-manual.md) for full documentation of all plugin 
 
 ## Use NetBeans as an MCP Server from Windsurf, Cursor, or VS Code
 
-The plugin runs a full **HTTP/SSE MCP server** inside NetBeans (default port **28991**). Any MCP-capable IDE can connect to it — not just Claude Code CLI.
+The plugin runs a full **HTTP/SSE MCP server** inside NetBeans (default port **28991**). Any MCP-capable IDE can connect to it — not just Claude Code CLI. This works independently of whether you use Claude Code or Devin in the embedded terminal.
+
+**Devin (desktop app)** — run once in a terminal:
+
+```
+devin mcp add netbeans http://127.0.0.1:28991/sse
+```
 
 **Windsurf** — add to `~/.codeium/windsurf/mcp_config.json`:
 
