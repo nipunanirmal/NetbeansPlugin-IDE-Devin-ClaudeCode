@@ -316,8 +316,8 @@ public final class ClaudeCodeOptionsPanel extends JPanel {
 
         // --- CLI type ---
         form.add(new JLabel("CLI type:"), gbc(0, row, false));
-        cliTypeCombo = new javax.swing.JComboBox<>(new String[]{"Claude Code (claude)", "Devin (devin)"});
-        cliTypeCombo.setToolTipText("Select the AI CLI to use: Claude Code or Devin");
+        cliTypeCombo = new javax.swing.JComboBox<>(new String[]{"Claude Code (claude)", "Devin (devin)", "Google Antigravity (antigravity)"});
+        cliTypeCombo.setToolTipText("Select the AI CLI to use: Claude Code, Devin, or Google Antigravity");
         form.add(cliTypeCombo, gbc(1, row, false));
         row++;
 
@@ -500,8 +500,9 @@ public final class ClaudeCodeOptionsPanel extends JPanel {
         choiceMenuFocusCombo.setSelectedIndex(focusIdx >= 0 ? focusIdx : 0);
         hangTimeoutSpinner.setValue(ClaudeCodePreferences.getHangTimeoutSeconds());
         mcpEnabledCheckBox.setSelected(ClaudeCodePreferences.isMcpEnabled());
-        cliTypeCombo.setSelectedIndex(
-                ClaudeCodePreferences.isDevinCli() ? 1 : 0);
+        int cliIdx = ClaudeCodePreferences.isDevinCli() ? 1
+                : ClaudeCodePreferences.isAntigravityCli() ? 2 : 0;
+        cliTypeCombo.setSelectedIndex(cliIdx);
 
         String sendVal    = ClaudeCodePreferences.getSendKey();
         String newlineVal = ClaudeCodePreferences.getNewlineKey();
@@ -550,6 +551,8 @@ public final class ClaudeCodeOptionsPanel extends JPanel {
         ClaudeCodePreferences.setHangTimeoutSeconds((Integer) hangTimeoutSpinner.getValue());
         String newCliType = cliTypeCombo.getSelectedIndex() == 1
                         ? ClaudeCodePreferences.CLI_TYPE_DEVIN
+                        : cliTypeCombo.getSelectedIndex() == 2
+                        ? ClaudeCodePreferences.CLI_TYPE_ANTIGRAVITY
                         : ClaudeCodePreferences.CLI_TYPE_CLAUDE;
         if (!newCliType.equals(ClaudeCodePreferences.getCliType())) {
             ClaudeCodePreferences.setClaudeExecutablePath("");

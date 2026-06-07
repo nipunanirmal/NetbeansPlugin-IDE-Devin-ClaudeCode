@@ -193,6 +193,8 @@ public final class ClaudeProcess {
                 + (mode == SessionMode.RESUME_SPECIFIC ? ", resumeId=" + resumeSessionId : ""));
 
         boolean devinCli = io.github.nbplugins.claudecodegui.settings.ClaudeCodePreferences.isDevinCli();
+        boolean antigravityCli = io.github.nbplugins.claudecodegui.settings.ClaudeCodePreferences.isAntigravityCli();
+        boolean externalCli = devinCli || antigravityCli;
 
         List<String> cmd = new ArrayList<>();
         cmd.add(executable);
@@ -200,16 +202,17 @@ public final class ClaudeProcess {
         LOG.info("MCP service lookup: " + (mcp == null ? "null" : mcp.getClass().getName())
                 + ", running=" + (mcp != null && mcp.isServerRunning())
                 + ", port=" + (mcp != null ? mcp.getServerPort() : -1)
-                + ", cliType=" + (devinCli ? "devin" : "claude"));
+                + ", cliType=" + io.github.nbplugins.claudecodegui.settings.ClaudeCodePreferences.getCliType());
         if (mcp != null && mcp.isServerRunning()) {
             int port = mcp.getServerPort();
             if (io.github.nbplugins.claudecodegui.settings.ClaudeCodePreferences.isMcpEnabled()) {
-                if (devinCli) {
-                    // Devin registers MCP servers persistently via 'devin mcp add'.
-                    // The --config flag replaces the entire user config, so we must NOT
-                    // pass it here. The user registers the netbeans server once with:
-                    //   devin mcp add netbeans http://127.0.0.1:<port>/sse
-                    LOG.info("Devin CLI: MCP is registered persistently via 'devin mcp add'; skipping config flag. Port: " + port);
+                if (externalCli) {
+                    // Devin and Antigravity register MCP servers persistently via their own CLI
+                    // (e.g. 'devin mcp add' / 'antigravity mcp add'). Passing a --config flag
+                    // would replace the entire user config, so we must NOT do that here.
+                    // The user registers the netbeans server once manually.
+                    String cliName = devinCli ? "Devin" : "Antigravity";
+                    LOG.info(cliName + " CLI: MCP is registered persistently; skipping config flag. Port: " + port);
                 } else {
                     // Claude uses --mcp-config <PATH>.
                     // On Windows, inline JSON gets quote-stripped by CreateProcess, so we
@@ -229,7 +232,7 @@ public final class ClaudeProcess {
             } else {
                 LOG.info("MCP integration disabled by user preference; skipping MCP config flag");
             }
-            if (!devinCli) {
+            if (!externalCli) {
                 try {
                     writeSettingsLocalJson(workingDir, port, profile);
                 } catch (IOException e) {

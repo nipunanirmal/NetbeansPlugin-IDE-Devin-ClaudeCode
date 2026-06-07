@@ -85,7 +85,9 @@ public final class ClaudeCodePreferences {
             setClaudeExecutablePath(found);
             return found;
         }
-        return isDevinCli() ? "devin" : "claude";
+        if (isDevinCli()) return "devin";
+        if (isAntigravityCli()) return "antigravity";
+        return "claude";
     }
 
     /**
@@ -97,12 +99,15 @@ public final class ClaudeCodePreferences {
     static String findOnPath() {
         boolean isWindows = System.getProperty("os.name", "")
                 .toLowerCase().contains("win");
-        boolean devin = isDevinCli();
         String[] candidates;
-        if (devin) {
+        if (isDevinCli()) {
             candidates = isWindows
                     ? new String[]{"devin.exe", "devin.cmd", "devin"}
                     : new String[]{"devin"};
+        } else if (isAntigravityCli()) {
+            candidates = isWindows
+                    ? new String[]{"antigravity.exe", "antigravity.cmd", "antigravity"}
+                    : new String[]{"antigravity"};
         } else {
             candidates = isWindows
                     ? new String[]{"claude.cmd", "claude.exe", "claude"}
@@ -866,6 +871,8 @@ public final class ClaudeCodePreferences {
     public static final String CLI_TYPE_CLAUDE = "claude";
     /** Value: use Devin CLI ({@code devin}). */
     public static final String CLI_TYPE_DEVIN  = "devin";
+    /** Value: use Google Antigravity CLI ({@code antigravity}). */
+    public static final String CLI_TYPE_ANTIGRAVITY = "antigravity";
     /** Default: Claude Code. */
     public static final String DEFAULT_CLI_TYPE = CLI_TYPE_CLAUDE;
 
@@ -885,8 +892,10 @@ public final class ClaudeCodePreferences {
      * @param type {@link #CLI_TYPE_CLAUDE} or {@link #CLI_TYPE_DEVIN}
      */
     public static void setCliType(String type) {
-        NbPreferences.forModule(ClaudeCodePreferences.class)
-                .put(KEY_CLI_TYPE, CLI_TYPE_DEVIN.equals(type) ? CLI_TYPE_DEVIN : CLI_TYPE_CLAUDE);
+        String resolved = CLI_TYPE_DEVIN.equals(type) ? CLI_TYPE_DEVIN
+                : CLI_TYPE_ANTIGRAVITY.equals(type) ? CLI_TYPE_ANTIGRAVITY
+                : CLI_TYPE_CLAUDE;
+        NbPreferences.forModule(ClaudeCodePreferences.class).put(KEY_CLI_TYPE, resolved);
     }
 
     /**
@@ -896,6 +905,15 @@ public final class ClaudeCodePreferences {
      */
     public static boolean isDevinCli() {
         return CLI_TYPE_DEVIN.equals(getCliType());
+    }
+
+    /**
+     * Convenience method: returns {@code true} when the active CLI is Antigravity.
+     *
+     * @return {@code true} if Google Antigravity CLI is selected
+     */
+    public static boolean isAntigravityCli() {
+        return CLI_TYPE_ANTIGRAVITY.equals(getCliType());
     }
 
     private static String validated(String value, String fallback) {
