@@ -31,43 +31,61 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           cache: maven
 
+      - name: Auto-tag on any branch
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
+          # Create base tag (MAJOR.MINOR) from pom.xml if not exists
+          POM_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | sed 's/-.*//')
+          MM=$(echo "$POM_VERSION" | cut -d. -f1-2)
+          if ! git tag | grep -q "^${MM}$"; then
+            git tag "$MM"
+            git push origin "$MM"
+            echo "Created base tag: $MM"
+          fi
+
       - name: Calculate version
         id: ver
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git fetch --prune --tags
-          # Release tag on current commit? (e.g. 1.2.18)
-          REL_TAG=$(git tag --points-at HEAD | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)
-          if [[ -n "$REL_TAG" ]]; then
+          # Auto-create release tag on every push (branch-name + build number)
+          BRANCH=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9]/-/g')
+          POM_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | sed 's/-.*//')
+          MM=$(echo "$POM_VERSION" | cut -d. -f1-2)
+          # Count commits since base tag for build number
+          BASE_TAG=$(git tag | grep -E "^${MM}$" | sort -V | tail -1 || echo "")
+          if [[ -n "$BASE_TAG" ]]; then
+            BUILD_NUM=$(git rev-list "${BASE_TAG}..HEAD" --count 2>/dev/null || echo "0")
+          else
+            BUILD_NUM=$(git rev-list --count HEAD)
+          fi
+          REL_TAG="${MM}.${BUILD_NUM}-${BRANCH}"
+          VER="$REL_TAG"
+          RELEASE=ON
+          # Create or update release
+          if ! gh release view "$REL_TAG" --json id -q .id &>/dev/null; then
+            NOTES=RELNOTES.md
+            [[ -f "$NOTES" ]] || echo "Release $VER" > "$NOTES"
+            gh release create "$REL_TAG" --draft --title "$VER" --notes-file "$NOTES" || true
+          fi
+          UPLOAD_URL=$(gh release view "$REL_TAG" --json uploadUrl -q .uploadUrl 2>/dev/null || echo "")
+          # Check for manual release tag on current commit (takes precedence)
+          MANUAL_TAG=$(git tag --points-at HEAD | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)
+          if [[ -n "$MANUAL_TAG" ]]; then
+            REL_TAG="$MANUAL_TAG"
             VER="$REL_TAG"
-            RELEASE=ON
-            # Create draft release if it doesn't exist yet
             if ! gh release view "$REL_TAG" --json id -q .id &>/dev/null; then
               NOTES=RELNOTES.md
               [[ -f "$NOTES" ]] || echo "Release $VER" > "$NOTES"
-              gh release create "$REL_TAG" --draft --title "$VER" --notes-file "$NOTES"
+              gh release create "$REL_TAG" --draft --title "$VER" --notes-file "$NOTES" || true
             fi
-            UPLOAD_URL=$(gh release view "$REL_TAG" --json uploadUrl -q .uploadUrl)
-          else
-            POM_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | sed 's/-.*//')
-            MM=$(echo "$POM_VERSION" | cut -d. -f1-2)
-            MM_ESC="${MM//./\\.}"
-            LAST_REL=$(git tag | grep -E "^${MM_ESC}\.[0-9]+$" | sort -V | tail -1)
-            BASE_TAG=$(git tag | grep -E "^${MM_ESC}$" | sort -V | tail -1 || echo "")
-            if [[ -n "$LAST_REL" ]]; then
-              START=$(echo "$LAST_REL" | cut -d. -f3)
-              N=$(git rev-list "${LAST_REL}..HEAD" --count 2>/dev/null || echo "0")
-              VER="${MM}.$((START + N))"
-            elif [[ -n "$BASE_TAG" ]]; then
-              N=$(git rev-list "${BASE_TAG}..HEAD" --count 2>/dev/null || echo "0")
-              VER="${MM}.${N}"
-            else
-              VER="${MM}.0"
-            fi
-            RELEASE=OFF
-            UPLOAD_URL=""
-            REL_TAG=""
+            UPLOAD_URL=$(gh release view "$REL_TAG" --json uploadUrl -q .uploadUrl 2>/dev/null || echo "")
           fi
           echo "project_ver=$VER" >> $GITHUB_OUTPUT
           echo "release_flag=$RELEASE" >> $GITHUB_OUTPUT
