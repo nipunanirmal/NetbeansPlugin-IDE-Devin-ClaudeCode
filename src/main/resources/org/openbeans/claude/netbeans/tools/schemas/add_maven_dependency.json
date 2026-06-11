@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "groupId": {
+      "type": "string",
+      "description": "Maven groupId of the dependency (e.g. com.google.guava)"
+    },
+    "artifactId": {
+      "type": "string",
+      "description": "Maven artifactId of the dependency (e.g. guava)"
+    },
+    "version": {
+      "type": "string",
+      "description": "Version of the dependency (e.g. 33.2.1-jre)"
+    },
+    "scope": {
+      "type": "string",
+      "description": "Optional Maven scope: compile (default), test, provided, runtime",
+      "enum": ["compile", "test", "provided", "runtime"]
+    },
+    "projectPath": {
+      "type": "string",
+      "description": "Absolute path to the project directory containing pom.xml. Omit to auto-detect the first open Maven project."
+    }
+  },
+  "required": ["groupId", "artifactId", "version"]
+}

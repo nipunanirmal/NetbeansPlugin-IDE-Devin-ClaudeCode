@@ -53,6 +53,8 @@ import io.github.nbplugins.claudecodegui.ui.ClaudeSessionTab;
 import io.github.nbplugins.claudecodegui.settings.ClaudeCodePreferences;
 import io.github.nbplugins.claudecodegui.ui.FileDiffOpener;
 import io.github.nbplugins.claudecodegui.ui.MarkdownPreviewTab;
+import io.github.nbplugins.claudecodegui.mcp.tools.AddLibraryJar;
+import io.github.nbplugins.claudecodegui.mcp.tools.AddMavenDependency;
 import io.github.nbplugins.claudecodegui.mcp.tools.DiffTabTracker;
 import io.github.nbplugins.claudecodegui.mcp.tools.GetDiagnostics;
 import io.github.nbplugins.claudecodegui.mcp.tools.GetOpenEditors;
@@ -105,6 +107,8 @@ public class NetBeansMCPHandler {
     private final SaveDocument saveDocument;
     private final ShowMarkdown showMarkdownTool;
     private final ShowMarkdownFile showMarkdownFileTool;
+    private final AddMavenDependency addMavenDependencyTool;
+    private final AddLibraryJar addLibraryJarTool;
 
     /** Creates a new handler and initializes all MCP tool instances. */
     public NetBeansMCPHandler() {
@@ -122,6 +126,8 @@ public class NetBeansMCPHandler {
         this.saveDocument = new SaveDocument();
         this.showMarkdownTool = new ShowMarkdown();
         this.showMarkdownFileTool = new ShowMarkdownFile();
+        this.addMavenDependencyTool = new AddMavenDependency();
+        this.addLibraryJarTool = new AddLibraryJar();
     }
 
     /**
@@ -177,6 +183,10 @@ public class NetBeansMCPHandler {
 
                 case "prompts/list":
                     response.set("result", handlePromptsList());
+                    break;
+
+                case "prompts/get":
+                    response.set("result", handlePromptsGet(params));
                     break;
 
                 default:
@@ -266,6 +276,12 @@ public class NetBeansMCPHandler {
                 "Open a live-updating Markdown Preview tab for a .md file. "
               + "The tab refreshes automatically when the file changes on disk.",
                 "show_markdown_file"));
+        tools.add(createToolDefinition("add_maven_dependency",
+                "Add a Maven dependency to a project's pom.xml",
+                "add_maven_dependency"));
+        tools.add(createToolDefinition("add_library_jar",
+                "Add a JAR library to an Ant/NetBeans project (copies JAR to lib/ and updates nbproject/project.properties)",
+                "add_library_jar"));
 
         ObjectNode result = responseBuilder.objectNode();
         result.set("tools", tools);
@@ -342,6 +358,16 @@ public class NetBeansMCPHandler {
                 case "show_markdown_file":
                     result = this.showMarkdownFileTool.run(
                             this.showMarkdownFileTool.parseArguments(arguments));
+                    break;
+
+                case "add_maven_dependency":
+                    result = this.addMavenDependencyTool.run(
+                            this.addMavenDependencyTool.parseArguments(arguments));
+                    break;
+
+                case "add_library_jar":
+                    result = this.addLibraryJarTool.run(
+                            this.addLibraryJarTool.parseArguments(arguments));
                     break;
 
                 default:
@@ -448,6 +474,13 @@ public class NetBeansMCPHandler {
         formGuide.put("mimeType", "text/markdown");
         resources.add(formGuide);
 
+        ObjectNode jasperSkill = responseBuilder.objectNode();
+        jasperSkill.put("uri", "resource://jasperreports-skill");
+        jasperSkill.put("name", "JasperReports Skill");
+        jasperSkill.put("description", "JasperReports knowledge: compile-once cache strategy, template resolution, JDBC filling, PDF/Excel export, .jrxml band structure, field/expression syntax");
+        jasperSkill.put("mimeType", "text/markdown");
+        resources.add(jasperSkill);
+
         ObjectNode result = responseBuilder.objectNode();
         result.set("resources", resources);
         return result;
@@ -481,6 +514,28 @@ public class NetBeansMCPHandler {
             }
         }
 
+        if ("resource://jasperreports-skill".equals(uri)) {
+            try {
+                InputStream is = getClass().getResourceAsStream(
+                    "/io/github/nbplugins/claudecodegui/resources/jasperreports-skill.md");
+                if (is == null) {
+                    throw new IllegalStateException("jasperreports-skill.md not found in JAR");
+                }
+                String content = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                ObjectNode result = responseBuilder.objectNode();
+                ArrayNode contents = responseBuilder.arrayNode();
+                ObjectNode item = responseBuilder.objectNode();
+                item.put("uri", uri);
+                item.put("mimeType", "text/markdown");
+                item.put("text", content);
+                contents.add(item);
+                result.set("contents", contents);
+                return result;
+            } catch (IOException ex) {
+                throw new IllegalStateException("Failed to read jasperreports-skill.md", ex);
+            }
+        }
+
         if (uri.startsWith("project://")) {
             String projectPath = uri.substring("project://".length());
             //XXX: This is probably doing the wrong thing
@@ -501,9 +556,106 @@ public class NetBeansMCPHandler {
         codeReviewPrompt.put("description", "Review code in NetBeans project");
         prompts.add(codeReviewPrompt);
 
+        ObjectNode rulesPrompt = responseBuilder.objectNode();
+        rulesPrompt.put("name", "netbeans_rules");
+        rulesPrompt.put("description",
+            "NetBeans GUI coding rules: GEN markers, .form/.java sync, library tools, "
+          + "layout patterns, event handlers. Read this before creating any Swing UI.");
+        prompts.add(rulesPrompt);
+
+        ObjectNode jasperPrompt = responseBuilder.objectNode();
+        jasperPrompt.put("name", "jasperreports");
+        jasperPrompt.put("description",
+            "JasperReports report generation guide: .jrxml templates, compile-once caching, "
+          + "PDF/Excel export, field syntax, band structure. Read this before working with reports.");
+        prompts.add(jasperPrompt);
+
         ObjectNode result = responseBuilder.objectNode();
         result.set("prompts", prompts);
         return result;
+    }
+
+    /**
+     * Returns the content of a named prompt.
+     * The {@code netbeans_rules} prompt delivers the full NetBeans form guide
+     * as a {@code system} role message so Claude absorbs the rules automatically.
+     */
+    private JsonNode handlePromptsGet(JsonNode params) {
+        String name = params != null && params.has("name") ? params.get("name").asText() : "";
+
+        if ("netbeans_rules".equals(name)) {
+            try {
+                InputStream is = getClass().getResourceAsStream(
+                    "/io/github/nbplugins/claudecodegui/resources/netbeans-form-guide.md");
+                String content = is != null
+                    ? new String(is.readAllBytes(), StandardCharsets.UTF_8)
+                    : "NetBeans form guide not found.";
+                if (is != null) is.close();
+
+                ObjectNode result = responseBuilder.objectNode();
+                result.put("name", "netbeans_rules");
+                result.put("description", "NetBeans GUI coding rules");
+
+                ArrayNode messages = responseBuilder.arrayNode();
+                ObjectNode msg = responseBuilder.objectNode();
+                msg.put("role", "user");
+                ObjectNode msgContent = responseBuilder.objectNode();
+                msgContent.put("type", "text");
+                msgContent.put("text", content);
+                msg.set("content", msgContent);
+                messages.add(msg);
+                result.set("messages", messages);
+                return result;
+            } catch (IOException e) {
+                LOGGER.log(Level.WARNING, "Failed to read netbeans-form-guide.md", e);
+            }
+        }
+
+        if ("jasperreports".equals(name)) {
+            try {
+                InputStream is = getClass().getResourceAsStream(
+                    "/io/github/nbplugins/claudecodegui/resources/jasperreports-skill.md");
+                String content = is != null
+                    ? new String(is.readAllBytes(), StandardCharsets.UTF_8)
+                    : "JasperReports skill not found.";
+                if (is != null) is.close();
+
+                ObjectNode result = responseBuilder.objectNode();
+                result.put("name", "jasperreports");
+                result.put("description", "JasperReports report generation guide");
+
+                ArrayNode messages = responseBuilder.arrayNode();
+                ObjectNode msg = responseBuilder.objectNode();
+                msg.put("role", "user");
+                ObjectNode msgContent = responseBuilder.objectNode();
+                msgContent.put("type", "text");
+                msgContent.put("text", content);
+                msg.set("content", msgContent);
+                messages.add(msg);
+                result.set("messages", messages);
+                return result;
+            } catch (IOException e) {
+                LOGGER.log(Level.WARNING, "Failed to read jasperreports-skill.md", e);
+            }
+        }
+
+        if ("code_review".equals(name)) {
+            ObjectNode result = responseBuilder.objectNode();
+            result.put("name", "code_review");
+            result.put("description", "Review code in NetBeans project");
+            ArrayNode messages = responseBuilder.arrayNode();
+            ObjectNode msg = responseBuilder.objectNode();
+            msg.put("role", "user");
+            ObjectNode msgContent = responseBuilder.objectNode();
+            msgContent.put("type", "text");
+            msgContent.put("text", "Please review the code in the currently open NetBeans project for correctness, style, and potential bugs.");
+            msg.set("content", msgContent);
+            messages.add(msg);
+            result.set("messages", messages);
+            return result;
+        }
+
+        throw new IllegalArgumentException("Unknown prompt: " + name);
     }
 
     // Helper methods

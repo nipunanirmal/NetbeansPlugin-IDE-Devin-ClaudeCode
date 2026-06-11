@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "jarPath": {
+      "type": "string",
+      "description": "Absolute path to the JAR file to add to the project"
+    },
+    "projectPath": {
+      "type": "string",
+      "description": "Absolute path to the project directory (the folder that contains nbproject/). Omit to auto-detect the first open Ant/NetBeans project."
+    },
+    "copyToLib": {
+      "type": "boolean",
+      "description": "Whether to copy the JAR into the project lib/ folder. Defaults to true. Set to false to register an already-in-project JAR without copying."
+    }
+  },
+  "required": ["jarPath"]
+}

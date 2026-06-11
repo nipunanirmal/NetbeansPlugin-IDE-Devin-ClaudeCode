@@ -68,30 +68,47 @@ final class NetBeansSettingsProvider extends DefaultSettingsProvider {
 
     @Override
     public com.jediterm.terminal.emulator.ColorPalette getTerminalColorPalette() {
-        return BRIGHT_YELLOW_PALETTE;
+        return new com.jediterm.terminal.emulator.ColorPalette() {
+            @Override
+            protected com.jediterm.core.Color getForegroundByColorIndex(int index) {
+                // Yellow (indices 3, 11): use amber/gold that's readable on both backgrounds
+                if (index == 3 || index == 11) {
+                    return isDarkTheme()
+                        ? new com.jediterm.core.Color(0xFF, 0xD7, 0x00)  // Bright gold on dark
+                        : new com.jediterm.core.Color(0xB3, 0x86, 0x00);  // Dark amber on light
+                }
+                // Cyan/Light blue (indices 6, 14): use darker teal on light backgrounds
+                if (index == 6 || index == 14) {
+                    return isDarkTheme()
+                        ? new com.jediterm.core.Color(0x00, 0xFF, 0xFF)  // Bright cyan on dark
+                        : new com.jediterm.core.Color(0x00, 0x66, 0x80);  // Dark teal on light
+                }
+                return ColorPaletteImpl.XTERM_PALETTE.getForeground(
+                        com.jediterm.terminal.emulator.ColorPalette.getIndexedTerminalColor(index));
+            }
+
+            @Override
+            protected com.jediterm.core.Color getBackgroundByColorIndex(int index) {
+                if (index == 3 || index == 11) {
+                    return isDarkTheme()
+                        ? new com.jediterm.core.Color(0xFF, 0xD7, 0x00)
+                        : new com.jediterm.core.Color(0xB3, 0x86, 0x00);
+                }
+                if (index == 6 || index == 14) {
+                    return isDarkTheme()
+                        ? new com.jediterm.core.Color(0x00, 0xFF, 0xFF)
+                        : new com.jediterm.core.Color(0x00, 0x66, 0x80);
+                }
+                return ColorPaletteImpl.XTERM_PALETTE.getBackground(
+                        com.jediterm.terminal.emulator.ColorPalette.getIndexedTerminalColor(index));
+            }
+        };
     }
 
-    private static final com.jediterm.core.Color YELLOW_BRIGHT =
-            new com.jediterm.core.Color(0xFF, 0xD7, 0x00);
-    private static final com.jediterm.core.Color YELLOW_INTENSE =
-            new com.jediterm.core.Color(0xFF, 0xFF, 0x5F);
-
-    private static final com.jediterm.terminal.emulator.ColorPalette BRIGHT_YELLOW_PALETTE =
-            new com.jediterm.terminal.emulator.ColorPalette() {
-                @Override
-                protected com.jediterm.core.Color getForegroundByColorIndex(int index) {
-                    if (index == 3)  return YELLOW_BRIGHT;
-                    if (index == 11) return YELLOW_INTENSE;
-                    return ColorPaletteImpl.XTERM_PALETTE.getForeground(
-                            com.jediterm.terminal.emulator.ColorPalette.getIndexedTerminalColor(index));
-                }
-
-                @Override
-                protected com.jediterm.core.Color getBackgroundByColorIndex(int index) {
-                    if (index == 3)  return YELLOW_BRIGHT;
-                    if (index == 11) return YELLOW_INTENSE;
-                    return ColorPaletteImpl.XTERM_PALETTE.getBackground(
-                            com.jediterm.terminal.emulator.ColorPalette.getIndexedTerminalColor(index));
-                }
-            };
+    private boolean isDarkTheme() {
+        Color bg = UIManager.getColor("Panel.background");
+        if (bg == null) return false;
+        // Sum of RGB < 384 indicates dark theme (threshold: 128*3)
+        return (bg.getRed() + bg.getGreen() + bg.getBlue()) < 384;
+    }
 }

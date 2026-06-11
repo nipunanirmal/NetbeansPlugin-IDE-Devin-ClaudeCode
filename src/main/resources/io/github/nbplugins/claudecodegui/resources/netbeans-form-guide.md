@@ -485,45 +485,55 @@ Java equivalent: `tabbedPane.addTab("Tab 1", tab1Panel);`
 
 ---
 
-## 10. Color Properties — ⚠️ CRITICAL
+## 10. Color Properties — ⚠️ CRITICAL (verified from NetBeans source)
 
-`ColorEditor.readFromXML()` calls `Integer.parseInt(value, 16)` — values are **lowercase hex strings**, never decimal, never float.
+> **Source verified**: `ColorEditor.readFromXML` in `platform/o.n.core/src/org/netbeans/beaninfo/editors/ColorEditor.java` (apache/netbeans).
+> It calls `Integer.parseInt(red, 16)` — **radix 16**. The `type` attribute is read first with no null-check; missing it throws `IOException`.
+
+### THE ONE CORRECT FORMAT — memorize this, never deviate
 
 ```xml
-<Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-  <Color red="HH" green="HH" blue="HH" type="rgb"/>
+<Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+  <Color red="f" green="4c" blue="81" type="rgb"/>
 </Property>
 ```
 
+**Three mandatory rules — ALL must hold or NetBeans throws an exception:**
+
+1. **`type="rgb"` is required** — missing it → `IOException` (NPE inside `readFromXML`)
+2. **Values are lowercase hex strings** — `Integer.parseInt(value, 16)` is used — e.g. `"ff"` not `"255"`
+3. **No `alpha` attribute** — causes `IllegalArgumentException` on NetBeans 23+
+
 Applies to: `background`, `foreground`, `caretColor`, `selectionColor`, `selectionBackground`, etc.
 
-### Color table
-| Color | red | green | blue |
-|-------|-----|-------|------|
-| Black (0,0,0) | `0` | `0` | `0` |
-| White (255,255,255) | `ff` | `ff` | `ff` |
-| Red (255,0,0) | `ff` | `0` | `0` |
-| Green (0,128,0) | `0` | `80` | `0` |
-| Bright Green (0,255,0) | `0` | `ff` | `0` |
-| Blue (0,0,255) | `0` | `0` | `ff` |
-| Yellow (255,255,0) | `ff` | `ff` | `0` |
-| Orange (255,165,0) | `ff` | `a5` | `0` |
-| Cyan (0,255,255) | `0` | `ff` | `ff` |
-| Magenta (255,0,255) | `ff` | `0` | `ff` |
-| Gray (128,128,128) | `80` | `80` | `80` |
-| Dark Gray (64,64,64) | `40` | `40` | `40` |
-| Light Gray (192,192,192) | `c0` | `c0` | `c0` |
-| Navy (0,0,128) | `0` | `0` | `80` |
-| Purple (128,0,128) | `80` | `0` | `80` |
+### Hex conversion quick-reference
+| RGB decimal | hex | RGB decimal | hex |
+|-------------|-----|-------------|-----|
+| 255 | `ff` | 128 | `80` |
+| 240 | `f0` | 100 | `64` |
+| 220 | `dc` | 96 | `60` |
+| 200 | `c8` | 80 | `50` |
+| 192 | `c0` | 76 | `4c` |
+| 185 | `b9` | 68 | `44` |
+| 180 | `b4` | 57 | `39` |
+| 174 | `ae` | 44 | `2c` |
+| 165 | `a5` | 41 | `29` |
+| 230 | `e6` | 39 | `27` |
+| 245 | `f5` | 34 | `22` |
+| 250 | `fa` | 30 | `1e` |
+| 129 | `81` | 24 | `18` |
+| 126 | `7e` | 15 | `f` |
+| 0 | `0` | | |
 
-**Formula:** `String.format("%x", decimalValue)` e.g. 128→`80`, 255→`ff`, 165→`a5`
+**To convert**: `printf '%x' <decimal>` or Python `hex(n)[2:]`
 
 ### What causes errors
-| Wrong format | Error |
-|---|---|
-| `red="255"` (decimal) | `IllegalArgumentException: Color parameter outside of expected range` |
-| `red="0.0"` (float) | `NumberFormatException` |
-| `alpha="255"` attribute | `IllegalArgumentException` on NetBeans 23+ |
+| Wrong format | Exception | Why |
+|---|---|---|
+| Missing `type="rgb"` | `IOException` | `readFromXML` calls `.getNodeValue()` on null → NPE → `throw new IOException()` |
+| `red="255"` (decimal > 0xff) | `IllegalArgumentException` | `Integer.parseInt("255", 16)` = 597, out of 0–255 range |
+| `red="0.0"` (float) | `NumberFormatException` | `parseInt` cannot parse decimal point |
+| `alpha="255"` attribute | `IllegalArgumentException` | NetBeans 23+ rejects alpha channel in this context |
 
 ---
 
@@ -1019,7 +1029,7 @@ public class MyFrame extends javax.swing.JFrame {
 - [ ] Create `ClassName.form` in `.../views/` package folder
 - [ ] Create `ClassName.java` in `.../views/` package folder with correct `package` declaration
 - [ ] `.form` component `id` names must match variable names in `GEN-BEGIN:variables`
-- [ ] Use **hex** color values in `.form` (never decimal, never float)
+- [ ] Use **hex string** color values in `.form` with **`type="rgb"`** (never decimal integers, never float) — e.g. `<Color red="ff" green="ff" blue="ff" type="rgb"/>` — missing `type` causes `IOException`
 - [ ] Use fully-qualified class names in `initComponents()` (`javax.swing.*`, `java.awt.*`)
 - [ ] **Never** put `GEN-FIRST`/`GEN-LAST` inside anonymous listener bodies — use standalone methods
 - [ ] **Never** declare `GridBagConstraints`, custom model/table objects, or inner class instances inside `GEN block` — all go in `setupComponents()`
@@ -1382,11 +1392,90 @@ Constraint:
 
 | Tool | When to use |
 |------|-------------|
-| `mcp0_getWorkspaceFolders` | Get open projects + paths |
-| `mcp0_getOpenEditors` | See what's currently open |
-| `mcp0_openFile` | Open a file in NetBeans editor |
-| `mcp0_getDiagnostics` | Check for compile errors |
-| `mcp0_saveDocument` | Save a file |
-| `mcp0_getCurrentSelection` | Read selected text |
-| `mcp0_show_markdown` | Show plan/summary in NetBeans |
-| `mcp0_permission_prompt` | Show diff and ask Accept/Deny |
+| `mcp5_getWorkspaceFolders` | Get open projects + paths |
+| `mcp5_getOpenEditors` | See what's currently open |
+| `mcp5_openFile` | Open a file in NetBeans editor |
+| `mcp5_getDiagnostics` | Check for compile errors |
+| `mcp5_saveDocument` | Save a file |
+| `mcp5_getCurrentSelection` | Read selected text |
+| `mcp5_show_markdown` | Show plan/summary in NetBeans |
+| `mcp5_permission_prompt` | Show diff and ask Accept/Deny |
+| `mcp5_add_maven_dependency` | Add a Maven dependency to pom.xml |
+| `mcp5_add_library_jar` | Add a JAR to an Ant/NetBeans project lib/ |
+
+---
+
+## 23. Adding Libraries (MANDATORY — do this before writing any code that needs them)
+
+### Maven project (has pom.xml)
+Use `add_maven_dependency`. **Call it once per dependency, before writing Java code that imports it.**
+
+```
+add_maven_dependency(
+  groupId    = "com.google.zxing",
+  artifactId = "core",
+  version    = "3.5.3"
+)
+```
+
+- `projectPath` is optional — auto-detects first open Maven project.
+- `scope` is optional — defaults to `compile`. Use `"test"` for test-only deps.
+- **Idempotent**: safe to call even if you are unsure the dep already exists.
+
+### Ant / classic NetBeans project (has nbproject/)
+Use `add_library_jar`. **The JAR must already exist on disk.**
+
+```
+add_library_jar(
+  jarPath     = "C:/path/to/library.jar",
+  projectPath = "C:/Users/.../MyProject",   // optional, auto-detected
+  copyToLib   = true                         // copies JAR into lib/, default true
+)
+```
+
+- Updates `nbproject/project.properties` → `javac.classpath` automatically.
+- After calling, instruct the user to do **Build → Clean and Build** in NetBeans.
+
+---
+
+## 24. Full-Application Generation Rules (ONE-PROMPT WORKFLOW)
+
+When asked to build a complete application in a single prompt, follow this exact sequence:
+
+### Step 1 — Discover project
+```
+mcp5_getWorkspaceFolders()   // get project path and type (Maven vs Ant)
+```
+
+### Step 2 — Add ALL required libraries first
+Call `add_maven_dependency` or `add_library_jar` for **every** library the app will need **before writing a single line of Java code**. Do not skip this — missing dependencies cause compile errors that break the whole app.
+
+### Step 3 — Write backend first (no UI yet)
+Create in order:
+1. Model classes (`model/`)
+2. DAO / repository classes (`dao/`)
+3. Service / business logic classes (`service/`)
+4. Utility classes (`util/`)
+
+### Step 4 — Write ALL UI forms
+For each JFrame / JPanel / JDialog:
+- Create **both** `ClassName.java` AND `ClassName.form` simultaneously
+- `.java` and `.form` **must be 100% in sync** — every variable in `GEN-BEGIN:variables` must have a matching component in `.form` and vice-versa
+- `setupComponents()` holds all non-GEN logic: table models, custom renderers, GridBagConstraints, etc.
+- Never put `DefaultComboBoxModel`, `DefaultTableModel`, `GridBagConstraints`, or inner class instantiation inside the GEN block
+
+### Step 5 — Entry point
+Create `Main.java` with look-and-feel setup and `EventQueue.invokeLater`.
+
+### Step 6 — Verify
+```
+mcp5_getDiagnostics()   // must return [] before declaring done
+```
+If errors exist, fix them. Do not stop until `getDiagnostics` returns empty.
+
+### Non-negotiable rules for every UI file
+- Every component declared in `GEN-BEGIN:variables` **must** be instantiated in `initComponents()`
+- All types fully qualified: `javax.swing.JLabel`, not `JLabel`
+- Event handler methods use `GEN-FIRST` / `GEN-LAST` on **standalone methods after** `initComponents()`, never inside anonymous listener bodies
+- `.form` XML component names must exactly match Java variable names
+- Colors in `.form` use `<Color red="hh" green="hh" blue="hh" type="rgb"/>` with **lowercase hex strings** — `ColorEditor.readFromXML` calls `Integer.parseInt(value, 16)` (radix 16); decimal integers like `red="255"` cause `IllegalArgumentException` (255 hex = 597 decimal, out of range)
