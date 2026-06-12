@@ -1,14 +1,14 @@
-# Claude Code GUI — NetBeans Plugin (+ Devin CLI fork)
+# NetBeans IDE AI Plugin — Full Swing UI Support for Claude, Devin, Windsurf, Cursor
 
-![Build](https://github.com/nbplugins/NetbeansPluginClaudeCodeGui/actions/workflows/build.yml/badge.svg)
-[![Release](https://img.shields.io/github/v/release/nbplugins/NetbeansPluginClaudeCodeGui)](https://github.com/nbplugins/NetbeansPluginClaudeCodeGui/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/nbplugins/NetbeansPluginClaudeCodeGui/total)](https://github.com/nbplugins/NetbeansPluginClaudeCodeGui/releases)
+![Build](https://github.com/nipunanirmal/NetbeansPlugin-IDE-Devin-ClaudeCode/actions/workflows/build.yml/badge.svg)
+[![Release](https://img.shields.io/github/v/release/nipunanirmal/NetbeansPlugin-IDE-Devin-ClaudeCode)](https://github.com/nipunanirmal/NetbeansPlugin-IDE-Devin-ClaudeCode/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/nipunanirmal/NetbeansPlugin-IDE-Devin-ClaudeCode/total)](https://github.com/nipunanirmal/NetbeansPlugin-IDE-Devin-ClaudeCode/releases)
 
 ![Overview](docs/screenshots/overview.png)
 
-> **Don't use Claude Code? Using Devin, Cursor, or Windsurf instead?**
-> This fork adds **Devin CLI support** — see [Devin CLI Setup](#devin-cli-setup) below.
-> The MCP server also lets Cursor and Windsurf connect directly to NetBeans — see [Use NetBeans as an MCP Server](#use-netbeans-as-an-mcp-server-from-windsurf-cursor-or-vs-code).
+> **A fork expanded beyond the original scope** — while the upstream project focused only on Claude Code CLI, this version adds **full Devin CLI support**, **MCP server for Cursor/Windsurf**, and **complete Swing GUI form generation** via AI.
+>
+> **🎯 Key Feature: 100% Swing UI Creation** — This MCP can create fully functional NetBeans Swing forms (`.form` + `.java`) with proper GEN markers, color encoding, event handlers, and layouts that open correctly in the NetBeans GUI Designer on the first try.
 
 NetBeans Claude Code GUI is a NetBeans IDE plugin that embeds an AI CLI (Claude Code **or Devin**) as a full interactive terminal session directly inside the IDE. You type prompts in a dedicated session tab, the AI reads and edits your project files, and the plugin provides:
 
@@ -31,9 +31,9 @@ The plugin code was written entirely by [Claude Code](https://claude.ai/code) us
 
 ## Download
 
-Download the latest `.nbm` file from [GitHub Releases](https://github.com/nbplugins/NetbeansPluginClaudeCodeGui/releases/latest).
+Download the latest `.nbm` file from [GitHub Releases](https://github.com/nipunanirmal/NetbeansPlugin-IDE-Devin-ClaudeCode/releases/latest).
 
-Intermediate builds between releases are available as artifacts on the [Actions](https://github.com/nbplugins/NetbeansPluginClaudeCodeGui/actions) page — open the latest successful workflow run and download the `nbm` artifact (delivered as a zip file; extract the `.nbm` before installing).
+Intermediate builds between releases are available as artifacts on the [Actions](https://github.com/nipunanirmal/NetbeansPlugin-IDE-Devin-ClaudeCode/actions) page — open the latest successful workflow run and download the `nbm` artifact (delivered as a zip file; extract the `.nbm` before installing).
 
 ---
 
@@ -43,7 +43,7 @@ See [Installation & Build](docs/installation.md) for requirements, installation 
 
 ## Devin CLI Setup
 
-> **This fork adds Devin CLI support.** The upstream project only supports Claude Code CLI. If you use **Devin**, follow these steps instead of the standard setup.
+> **This fork significantly expands capabilities beyond the original.** The upstream project only supports Claude Code CLI. This version supports **Claude Code, Devin, Windsurf, Cursor** and adds **AI-powered Swing GUI form generation**.
 
 ### 1. Install the plugin
 

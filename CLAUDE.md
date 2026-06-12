@@ -89,7 +89,7 @@ Each changelog entry must be committed **together with the code change it descri
 Commit messages must also start with a past-tense verb (e.g. "Fixed ...", "Added ..."). The subject line describes *what* was done; the body (if needed) explains *how* or *why*.
 
 When the commit fixes a GitHub issue:
-- The CHANGELOG entry must include the full issue URL: e.g. `Fixed ... (https://github.com/nbplugins/NetbeansPluginClaudeCodeGui/issues/N)`
+- The CHANGELOG entry must include the full issue URL: e.g. `Fixed ... (https://github.com/nipunanirmal/NetbeansPlugin-IDE-Devin-ClaudeCode/issues/N)`
 - The commit subject line should match the CHANGELOG entry text (without the leading `-`)
 - The commit body must include `Resolves: #N` followed by implementation explanation
 

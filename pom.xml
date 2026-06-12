@@ -8,9 +8,9 @@
     <artifactId>netbeans-plugin-claude-code-gui</artifactId>
     <version>1.2.21-SNAPSHOT</version>
     <packaging>nbm</packaging>
-    <name>Netbeans Plugin Claude Code GUI</name>
-    <description>NetBeans plugin that provides a GUI for Claude Code CLI — run claude code sessions directly inside the IDE.</description>
-    <url>https://github.com/nbplugins/NetbeansPluginClaudeCodeGui</url>
+    <name>NetBeans IDE AI Plugin — Full Swing UI Support</name>
+    <description>NetBeans plugin for Claude Code, Devin, Windsurf, Cursor — with AI-powered Swing GUI form generation that creates 100% working .form + .java files.</description>
+    <url>https://github.com/nipunanirmal/NetbeansPlugin-IDE-Devin-ClaudeCode</url>
 
     <licenses>
         <license>
@@ -22,16 +22,16 @@
 
     <developers>
         <developer>
-            <id>nbplugins</id>
-            <name>nbplugins</name>
-            <url>https://github.com/nbplugins</url>
+            <id>nipunanirmal</id>
+            <name>Nipuna Nirmal</name>
+            <url>https://github.com/nipunanirmal</url>
         </developer>
     </developers>
 
     <scm>
-        <connection>scm:git:git://github.com/nbplugins/NetbeansPluginClaudeCodeGui.git</connection>
-        <developerConnection>scm:git:ssh://github.com/nbplugins/NetbeansPluginClaudeCodeGui.git</developerConnection>
-        <url>https://github.com/nbplugins/NetbeansPluginClaudeCodeGui</url>
+        <connection>scm:git:git://github.com/nipunanirmal/NetbeansPlugin-IDE-Devin-ClaudeCode.git</connection>
+        <developerConnection>scm:git:ssh://github.com/nipunanirmal/NetbeansPlugin-IDE-Devin-ClaudeCode.git</developerConnection>
+        <url>https://github.com/nipunanirmal/NetbeansPlugin-IDE-Devin-ClaudeCode</url>
     </scm>
 
     <properties>

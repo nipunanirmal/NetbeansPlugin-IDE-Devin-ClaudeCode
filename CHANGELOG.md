@@ -4,7 +4,7 @@
 
 - Fixed mode switching (e.g. auto → plan) becoming unreliable when Claude Code is actively working: the edit-mode selector now correctly reaches the target mode without overshooting
 - Fixed stale model aliases from a "Claude Compatible API" profile still showing in the model selector after switching the profile to "Managed by Claude"
-- Fixed ClassNotFoundException on plugin installation/upgrade when the session tab had been previously saved under the old package name (https://github.com/nbplugins/NetbeansPluginClaudeCodeGui/issues/146)
+- Fixed ClassNotFoundException on plugin installation/upgrade when the session tab had been previously saved under the old package name (https://github.com/nipunanirmal/NetbeansPlugin-IDE-Devin-ClaudeCode/issues/146)
 - Fixed a Warning dialog appearing on NetBeans exit when a diff tab had been opened during the session
 
 # 1.2.8 (2026-05-24)
@@ -23,7 +23,7 @@
 
 # 1.0.4 (2026-05-18)
 
-- Migrated plugin home to https://github.com/nbplugins/NetbeansPluginClaudeCodeGui; updated Maven coordinates to io.github.nbplugins:netbeans-plugin-claude-code-gui; renamed Java packages to io.github.nbplugins.claudecodegui
+- Migrated plugin home to https://github.com/nipunanirmal/NetbeansPlugin-IDE-Devin-ClaudeCode; updated Maven coordinates to io.github.nbplugins:netbeans-plugin-claude-code-gui; renamed Java packages to io.github.nbplugins.claudecodegui
 
 # 0.23.10 (2026-05-18)
 
