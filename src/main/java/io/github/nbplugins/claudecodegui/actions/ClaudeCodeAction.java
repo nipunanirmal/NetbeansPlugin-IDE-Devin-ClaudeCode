@@ -28,11 +28,14 @@ import org.openide.util.NbBundle.Messages;
 @Messages("CTL_ClaudeCodeAction=Claude Code")
 public final class ClaudeCodeAction extends AbstractAction {
 
-    private static final String ICON_CLAUDE      = "io/github/nbplugins/claudecodegui/icons/claude-icon.png";
-    private static final String ICON_DEVIN       = "io/github/nbplugins/claudecodegui/icons/devin-icon.png";
-    private static final String ICON_DEVIN_32    = "io/github/nbplugins/claudecodegui/icons/devin-icon-32.png";
-    private static final String ICON_ANTIGRAVITY = "io/github/nbplugins/claudecodegui/icons/antigravity-icon.png";
-    private static final String ICON_CURSOR      = "io/github/nbplugins/claudecodegui/icons/cursor-icon.png";
+    private static final String ICON_CLAUDE           = "io/github/nbplugins/claudecodegui/icons/claude-icon.png";
+    private static final String ICON_CLAUDE_32        = "io/github/nbplugins/claudecodegui/icons/claude-icon-32.png";
+    private static final String ICON_DEVIN            = "io/github/nbplugins/claudecodegui/icons/devin-icon.png";
+    private static final String ICON_DEVIN_32         = "io/github/nbplugins/claudecodegui/icons/devin-icon-32.png";
+    private static final String ICON_ANTIGRAVITY      = "io/github/nbplugins/claudecodegui/icons/antigravity-icon.png";
+    private static final String ICON_ANTIGRAVITY_32   = "io/github/nbplugins/claudecodegui/icons/antigravity-icon-32.png";
+    private static final String ICON_CURSOR           = "io/github/nbplugins/claudecodegui/icons/cursor-icon.png";
+    private static final String ICON_CURSOR_32        = "io/github/nbplugins/claudecodegui/icons/cursor-icon-32.png";
 
     /** Constructs the action and sets the toolbar icon based on the configured CLI type. */
     public ClaudeCodeAction() {
@@ -45,15 +48,15 @@ public final class ClaudeCodeAction extends AbstractAction {
             label      = "Devin";
         } else if (ClaudeCodePreferences.isAntigravityCli()) {
             iconPath   = ICON_ANTIGRAVITY;
-            iconPath32 = ICON_ANTIGRAVITY;
+            iconPath32 = ICON_ANTIGRAVITY_32;
             label      = "Google Antigravity";
         } else if (ClaudeCodePreferences.isCursorCli()) {
             iconPath   = ICON_CURSOR;
-            iconPath32 = ICON_CURSOR;
+            iconPath32 = ICON_CURSOR_32;
             label      = "Cursor";
         } else {
             iconPath   = ICON_CLAUDE;
-            iconPath32 = ICON_CLAUDE;
+            iconPath32 = ICON_CLAUDE_32;
             label      = "Claude Code";
         }
         putValue("iconBase", iconPath);
