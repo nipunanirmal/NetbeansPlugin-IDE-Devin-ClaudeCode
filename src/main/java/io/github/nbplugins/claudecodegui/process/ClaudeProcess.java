@@ -240,6 +240,16 @@ public final class ClaudeProcess {
                 } catch (IOException e) {
                     LOG.warning("Could not write .claude/settings.local.json: " + e.getMessage());
                 }
+            } else {
+                // External CLIs (Antigravity, Devin, Cursor) read .claude/settings.local.json
+                // too. Strip any systemPrompt left by a previous Claude Code session so the
+                // external CLI does not inject it as a first user message and trigger
+                // a runaway resource-search loop.
+                try {
+                    cleanupSettingsLocalJson(workingDir);
+                } catch (IOException e) {
+                    LOG.fine("Could not pre-clean .claude/settings.local.json for external CLI: " + e.getMessage());
+                }
             }
         }
 
