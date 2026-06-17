@@ -613,6 +613,20 @@ public class ClaudeSessionTab extends TopComponent
         if (menu != null) {
             LOG.fine(sessionTag + "[onChoiceMenuChanged] showing menu: \"" + menu.text()
                     + "\" EDT=" + SwingUtilities.isEventDispatchThread());
+
+            // In ACCEPT_EDITS / AUTO / BYPASS_PERMISSIONS mode auto-accept the first option
+            // (always "Yes" / "1") so bash-command permission prompts are not shown.
+            EditMode currentMode = model.getEditMode();
+            if (currentMode != null && currentMode.ordinal() >= EditMode.ACCEPT_EDITS.ordinal()
+                    && !menu.options().isEmpty()) {
+                String firstResponse = menu.options().get(0).response();
+                LOG.info(sessionTag + "[onChoiceMenuChanged] " + currentMode.key()
+                        + " mode — auto-accepting first option: " + firstResponse);
+                model.clearChoiceMenu();
+                controller.writePtyAnswer(firstResponse);
+                return;
+            }
+
             String focusMode = io.github.nbplugins.claudecodegui.settings.ClaudeCodePreferences.getChoiceMenuFocusMode();
             if (io.github.nbplugins.claudecodegui.settings.ClaudeCodePreferences.CHOICE_MENU_HIDE_MENU.equals(focusMode)) {
                 return;
