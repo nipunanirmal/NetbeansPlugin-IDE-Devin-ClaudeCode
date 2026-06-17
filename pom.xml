@@ -6,11 +6,11 @@
 
     <groupId>io.github.nbplugins</groupId>
     <artifactId>netbeans-plugin-claude-code-gui</artifactId>
-    <version>1.2.21-SNAPSHOT</version>
+    <version>1.2.22-SNAPSHOT</version>
     <packaging>nbm</packaging>
-    <name>Netbeans Plugin Claude Code GUI</name>
-    <description>NetBeans plugin that provides a GUI for Claude Code CLI — run claude code sessions directly inside the IDE.</description>
-    <url>https://github.com/nbplugins/NetbeansPluginClaudeCodeGui</url>
+    <name>NetBeans IDE AI Plugin — Full Swing UI Support</name>
+    <description>NetBeans plugin for Claude Code, Devin, Windsurf, Cursor — with AI-powered Swing GUI form generation that creates 100% working .form + .java files.</description>
+    <url>https://github.com/nipunanirmal/NetbeansPlugin-IDE-Devin-ClaudeCode</url>
 
     <licenses>
         <license>
@@ -22,16 +22,16 @@
 
     <developers>
         <developer>
-            <id>nbplugins</id>
-            <name>nbplugins</name>
-            <url>https://github.com/nbplugins</url>
+            <id>nipunanirmal</id>
+            <name>Nipuna Nirmal</name>
+            <url>https://github.com/nipunanirmal</url>
         </developer>
     </developers>
 
     <scm>
-        <connection>scm:git:git://github.com/nbplugins/NetbeansPluginClaudeCodeGui.git</connection>
-        <developerConnection>scm:git:ssh://github.com/nbplugins/NetbeansPluginClaudeCodeGui.git</developerConnection>
-        <url>https://github.com/nbplugins/NetbeansPluginClaudeCodeGui</url>
+        <connection>scm:git:git://github.com/nipunanirmal/NetbeansPlugin-IDE-Devin-ClaudeCode.git</connection>
+        <developerConnection>scm:git:ssh://github.com/nipunanirmal/NetbeansPlugin-IDE-Devin-ClaudeCode.git</developerConnection>
+        <url>https://github.com/nipunanirmal/NetbeansPlugin-IDE-Devin-ClaudeCode</url>
     </scm>
 
     <properties>
@@ -128,8 +128,8 @@
 
                                 def svg = new File(project.basedir,
                                     'src/main/resources/io/github/nbplugins/claudecodegui/icons/cc-gui-icon.svg')
-                                def out = new File(project.build.outputDirectory,
-                                    'io/github/nbplugins/claudecodegui/icons')
+                                def out = new File(project.basedir,
+                                    'src/main/resources/io/github/nbplugins/claudecodegui/icons')
                                 out.mkdirs()
 
                                 [['claude-icon.png', 16f], ['claude-icon-32.png', 32f]].each { name, size ->
@@ -141,6 +141,37 @@
                                                 new TranscoderOutput(os))
                                     os.close()
                                     log.info("Generated ${name} (${size as int}px)")
+                                }
+                            </source>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-devin-icons</id>
+                        <phase>generate-resources</phase>
+                        <goals><goal>execute</goal></goals>
+                        <configuration>
+                            <source>
+                                import javax.imageio.ImageIO
+                                import java.awt.RenderingHints
+                                import java.awt.image.BufferedImage
+
+                                File srcFile = new File(project.basedir.toString(),
+                                    'src/main/resources/io/github/nbplugins/claudecodegui/icons/devin-icon-source.png')
+                                File outDir = new File(project.basedir.toString(),
+                                    'src/main/resources/io/github/nbplugins/claudecodegui/icons')
+                                outDir.mkdirs()
+
+                                BufferedImage original = ImageIO.read(srcFile)
+                                [['devin-icon.png', 16], ['devin-icon-32.png', 32]].each { pair ->
+                                    String iconName = pair[0]
+                                    int size = pair[1]
+                                    BufferedImage scaled = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
+                                    def g = scaled.createGraphics()
+                                    g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+                                    g.drawImage(original, 0, 0, size, size, null)
+                                    g.dispose()
+                                    ImageIO.write(scaled, 'PNG', new File(outDir, iconName))
+                                    log.info('Generated devin icon: ' + iconName + ' (' + size + 'px)')
                                 }
                             </source>
                         </configuration>
@@ -157,6 +188,7 @@
                             <directory>src/main/resources</directory>
                             <excludes>
                                 <exclude>**/*.svg</exclude>
+                                <exclude>**/devin-icon-source.png</exclude>
                             </excludes>
                         </resource>
                     </resources>
