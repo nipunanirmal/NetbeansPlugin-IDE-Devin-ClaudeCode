@@ -366,13 +366,7 @@ public class NetBeansMCPHandler {
 
             // Check if result is async
             if (result instanceof AsyncResponse<?>) {
-                AsyncResponse<?> asyncResponse = (AsyncResponse<?>) result;
-                asyncResponse.setHandler(new AsyncHandler<Object>() {
-                    @Override
-                    public void sendResponse(Object finalResult) {
-                        sendAsyncToolResponse(requestId, finalResult, sessionQueue);
-                    }
-                });
+                attachAsyncHandler((AsyncResponse<?>) result, requestId, sessionQueue);
                 return null; // No immediate response
             }
 
@@ -407,6 +401,16 @@ public class NetBeansMCPHandler {
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error sending async tool response", e);
         }
+    }
+
+    private <T> void attachAsyncHandler(AsyncResponse<T> asyncResponse, Integer requestId,
+                                        BlockingQueue<String> sessionQueue) {
+        asyncResponse.setHandler(new AsyncHandler<T>() {
+            @Override
+            public void sendResponse(T finalResult) {
+                sendAsyncToolResponse(requestId, finalResult, sessionQueue);
+            }
+        });
     }
 
     /**

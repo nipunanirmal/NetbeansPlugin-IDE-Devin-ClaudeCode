@@ -11,12 +11,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import io.github.nbplugins.claudecodegui.model.EditMode;
 import io.github.nbplugins.claudecodegui.model.ClaudeSessionModel;
 import io.github.nbplugins.claudecodegui.ui.FileDiffOpener;
-import org.openbeans.claude.netbeans.tools.AsyncHandler;
 import org.openbeans.claude.netbeans.tools.AsyncResponse;
 import org.openbeans.claude.netbeans.tools.Tool;
 import org.openbeans.claude.netbeans.tools.params.Content;
@@ -133,29 +133,37 @@ public class PermissionPromptTool implements Tool<PermissionPromptTool.Params, A
         String tabName = "Diff: " + new File(filePath).getName();
         final String finalTabName = resolveUniqueTabName(tabName);
 
-        return handler -> FileDiffOpener.open(filePath, before, after, finalTabName, null,
+        return handler -> {
+            AtomicBoolean completed = new AtomicBoolean(false);
+            FileDiffOpener.open(filePath, before, after, finalTabName, null,
             () -> {
                 LOGGER.info("Permission granted for tab: " + finalTabName);
-                AsyncHandler<List<Content>> h = DiffTabTracker.remove(finalTabName);
-                if (h != null) h.sendResponse(allowResult());
+                if (completed.compareAndSet(false, true)) {
+                    handler.sendResponse(allowResult());
+                }
             },
             reason -> {
                 // reason is not forwarded in the MCP protocol — tool returns just "deny"
                 LOGGER.info("Permission denied for tab: " + finalTabName);
-                DiffTabTracker.setRejected(finalTabName);
+                if (completed.compareAndSet(false, true)) {
+                    handler.sendResponse(denyResult());
+                }
             },
             () -> {
                 LOGGER.info("Permission cancelled for tab: " + finalTabName);
-                DiffTabTracker.setRejected(finalTabName);
+                if (completed.compareAndSet(false, true)) {
+                    handler.sendResponse(denyResult());
+                }
                 FileDiffOpener.cancelCurrentPromptForFile(filePath);
             },
             () -> {
                 LOGGER.info("Permission tab closed for tab: " + finalTabName);
-                if (DiffTabTracker.isTracked(finalTabName)) {
-                    DiffTabTracker.setRejected(finalTabName);
+                if (completed.compareAndSet(false, true)) {
+                    handler.sendResponse(denyResult());
                 }
             }
         );
+        };
     }
 
     // -----------------------------------------------------------------------
