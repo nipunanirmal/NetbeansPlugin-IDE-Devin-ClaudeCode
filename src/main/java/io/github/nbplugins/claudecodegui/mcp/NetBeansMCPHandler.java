@@ -367,7 +367,7 @@ public class NetBeansMCPHandler {
             // Check if result is async
             if (result instanceof AsyncResponse<?>) {
                 AsyncResponse<?> asyncResponse = (AsyncResponse<?>) result;
-                asyncResponse.setHandler(new AsyncHandler<Object>() {
+                asyncResponse.setHandler(new AsyncHandler() {
                     @Override
                     public void sendResponse(Object finalResult) {
                         sendAsyncToolResponse(requestId, finalResult, sessionQueue);

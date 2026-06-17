@@ -136,8 +136,8 @@ public class PermissionPromptTool implements Tool<PermissionPromptTool.Params, A
         return handler -> FileDiffOpener.open(filePath, before, after, finalTabName, null,
             () -> {
                 LOGGER.info("Permission granted for tab: " + finalTabName);
-                AsyncHandler<List<Content>> h = DiffTabTracker.remove(finalTabName);
-                if (h != null) h.sendResponse(allowResult());
+                DiffTabTracker.remove(finalTabName);
+                handler.sendResponse(allowResult());
             },
             reason -> {
                 // reason is not forwarded in the MCP protocol — tool returns just "deny"
