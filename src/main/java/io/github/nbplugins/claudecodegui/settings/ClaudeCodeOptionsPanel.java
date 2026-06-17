@@ -557,10 +557,13 @@ public final class ClaudeCodeOptionsPanel extends JPanel {
                         : cliTypeCombo.getSelectedIndex() == 3
                         ? ClaudeCodePreferences.CLI_TYPE_CURSOR
                         : ClaudeCodePreferences.CLI_TYPE_CLAUDE;
-        if (!newCliType.equals(ClaudeCodePreferences.getCliType())) {
+        // Save CLI type FIRST, then clear path if changed.
+        // This ensures resolveClaudeExecutable() auto-detects using the NEW CLI type.
+        boolean cliTypeChanged = !newCliType.equals(ClaudeCodePreferences.getCliType());
+        ClaudeCodePreferences.setCliType(newCliType);
+        if (cliTypeChanged) {
             ClaudeCodePreferences.setClaudeExecutablePath("");
         }
-        ClaudeCodePreferences.setCliType(newCliType);
         ClaudeCodePreferences.setMcpEnabled(mcpEnabledCheckBox.isSelected());
         ClaudeCodePreferences.setSendKey(selectedValue(sendRadios));
         ClaudeCodePreferences.setNewlineKey(selectedValue(newlineRadios));
