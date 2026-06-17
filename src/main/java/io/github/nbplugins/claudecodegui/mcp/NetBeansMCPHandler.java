@@ -225,7 +225,9 @@ public class NetBeansMCPHandler {
     }
 
     /**
-     * Sends the notifications/initialized notification after successful initialization.
+     * Sends the notifications/initialized notification after successful initialization,
+     * followed by a resources/updated notification to prompt the AI to read the
+     * NetBeans form guide before doing any .form/.java work.
      */
     private void sendInitializedNotification() {
         try {
@@ -233,6 +235,14 @@ public class NetBeansMCPHandler {
                 "notifications/initialized", null
             );
             sendViaSse(objectMapper.writeValueAsString(notification));
+
+            ObjectNode resourceUpdated = responseBuilder.createNotification(
+                "notifications/resources/updated", null
+            );
+            ObjectNode ruParams = responseBuilder.objectNode();
+            ruParams.put("uri", "resource://netbeans-form-guide");
+            resourceUpdated.set("params", ruParams);
+            sendViaSse(objectMapper.writeValueAsString(resourceUpdated));
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Failed to send initialized notification", e);
         }
@@ -256,7 +266,23 @@ public class NetBeansMCPHandler {
         tools.add(createToolDefinition("closeAllDiffTabs", "Close all diff viewer tabs", "CloseAllDiffTabsParams"));
         tools.add(createToolDefinition("openDiff", "Open a git diff for the file", "OpenDiffParams"));
         tools.add(createToolDefinition("permission_prompt",
-                "Shows proposed file changes as a diff and asks the user to allow or deny the operation.",
+                "Shows proposed file changes as a diff and asks the user to allow or deny the operation.\n"
+              + "\n"
+              + "NETBEANS .form/.java RULES — enforce on every Write/Edit/MultiEdit to *.form or *.java:\n"
+              + "1. ALWAYS create TWO files: ClassName.java + ClassName.form — never one without the other.\n"
+              + "2. .java GEN block: @SuppressWarnings(\"unchecked\") // <editor-fold defaultstate=\"collapsed\" desc=\" Generated Code \">//GEN-BEGIN:initComponents\n"
+              + "   instantiate ALL field variables first (alphabetical), then set properties, then layout, then pack()/nothing.\n"
+              + "   Close with: }// </editor-fold>//GEN-END:initComponents\n"
+              + "3. Event handlers after initComponents: void btnXActionPerformed(evt) {//GEN-FIRST:event_btnXActionPerformed ... }//GEN-LAST:event_btnXActionPerformed\n"
+              + "4. Field declarations at bottom: // Variables declaration - do not modify//GEN-BEGIN:variables ... // End of variables declaration//GEN-END:variables\n"
+              + "5. .form Color format — ONLY valid format: <Color red=\"ff\" green=\"b9\" blue=\"4c\" type=\"rgb\"/>\n"
+              + "   - type=\"rgb\" is REQUIRED (missing → IOException)\n"
+              + "   - values are LOWERCASE hex strings, NO alpha attribute (causes IllegalArgumentException)\n"
+              + "   - NEVER use decimal (255), NEVER use uppercase (FF), single digit ok (\"f\" not \"0f\")\n"
+              + "6. .form AuxValues: FormSettings_listenerGenerationStyle must be 0 (anonymous inner classes).\n"
+              + "7. .form root for JPanel: type=\"org.netbeans.modules.form.forminfo.JPanelFormInfo\"\n"
+              + "   .form root for JFrame: type=\"org.netbeans.modules.form.forminfo.JFrameFormInfo\"\n"
+              + "8. Read resource://netbeans-form-guide for full rules before creating any NetBeans form.",
                 "permission_prompt"));
         tools.add(createToolDefinition("show_markdown",
                 "Display markdown content in the IDE Markdown Preview tab. "
@@ -549,8 +575,12 @@ public class NetBeansMCPHandler {
         ObjectNode rulesPrompt = responseBuilder.objectNode();
         rulesPrompt.put("name", "netbeans_rules");
         rulesPrompt.put("description",
-            "NetBeans GUI coding rules: GEN markers, .form/.java sync, library tools, "
-          + "layout patterns, event handlers. Read this before creating any Swing UI.");
+            "REQUIRED reading before creating or editing any NetBeans .form or .java file. "
+          + "Covers: GEN-BEGIN/END marker structure, .form XML schema, color encoding rules "
+          + "(lowercase hex, type=\"rgb\", no alpha), listenerGenerationStyle=0, "
+          + "JComboBox/JMenuBar/ButtonGroup/JScrollPane/JTabbedPane patterns, "
+          + "layout managers (GroupLayout/BorderLayout/GridBagLayout), "
+          + "and .java/.form synchronisation contract.");
         prompts.add(rulesPrompt);
 
         ObjectNode jasperPrompt = responseBuilder.objectNode();
