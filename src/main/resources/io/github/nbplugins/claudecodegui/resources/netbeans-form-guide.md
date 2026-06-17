@@ -1044,7 +1044,7 @@ public class MyFrame extends javax.swing.JFrame {
 - [ ] Every child of a `DesignGridBagLayout` container has a full `<Constraints><GridBagConstraints .../>` block — without this, design view collapses all items into one row (see Section 24)
 - [ ] Design view = runtime: all fonts/colors/borders/sizes declared in `.form`; GridBagConstraints in `.form` AND `setupComponents()`; ComboBox models / custom TableModel / cell editors only in `setupComponents()`
 - [ ] After writing `.form`, verify no comments: `Select-String -Path "*.form" -Pattern "<!--"` — must return no matches
-- [ ] Call `mcp0_openFile` (NetBeans MCP tool) to open `.java` in NetBeans after creation
+- [ ] Call `openFile` (NetBeans MCP tool) to open `.java` in NetBeans after creation
 - [ ] User closes and reopens the tab in NetBeans to load Design view fresh
 
 ---
@@ -1390,18 +1390,20 @@ Constraint:
 
 ## 22. Useful NetBeans MCP Tools
 
+These tools are available via the `netbeans` MCP server registered in your session.
+
 | Tool | When to use |
 |------|-------------|
-| `mcp5_getWorkspaceFolders` | Get open projects + paths |
-| `mcp5_getOpenEditors` | See what's currently open |
-| `mcp5_openFile` | Open a file in NetBeans editor |
-| `mcp5_getDiagnostics` | Check for compile errors |
-| `mcp5_saveDocument` | Save a file |
-| `mcp5_getCurrentSelection` | Read selected text |
-| `mcp5_show_markdown` | Show plan/summary in NetBeans |
-| `mcp5_permission_prompt` | Show diff and ask Accept/Deny |
-| `mcp5_add_maven_dependency` | Add a Maven dependency to pom.xml |
-| `mcp5_add_library_jar` | Add a JAR to an Ant/NetBeans project lib/ |
+| `getWorkspaceFolders` | Get open projects + paths |
+| `getOpenEditors` | See what's currently open |
+| `openFile` | Open a file in NetBeans editor |
+| `getDiagnostics` | Check for compile errors |
+| `saveDocument` | Save a file |
+| `getCurrentSelection` | Read selected text |
+| `show_markdown` | Show plan/summary in NetBeans |
+| `permission_prompt` | Show diff and ask Accept/Deny |
+| `add_maven_dependency` | Add a Maven dependency to pom.xml |
+| `add_library_jar` | Add a JAR to an Ant/NetBeans project lib/ |
 
 ---
 
@@ -1444,7 +1446,7 @@ When asked to build a complete application in a single prompt, follow this exact
 
 ### Step 1 — Discover project
 ```
-mcp5_getWorkspaceFolders()   // get project path and type (Maven vs Ant)
+getWorkspaceFolders()   // get project path and type (Maven vs Ant)
 ```
 
 ### Step 2 — Add ALL required libraries first
@@ -1469,7 +1471,7 @@ Create `Main.java` with look-and-feel setup and `EventQueue.invokeLater`.
 
 ### Step 6 — Verify
 ```
-mcp5_getDiagnostics()   // must return [] before declaring done
+getDiagnostics()   // must return [] before declaring done
 ```
 If errors exist, fix them. Do not stop until `getDiagnostics` returns empty.
 

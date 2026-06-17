@@ -585,6 +585,19 @@ public final class ClaudeProcess {
                 root.remove("apiKeyHelper");
             }
 
+            // systemPrompt — instruct Claude to read the NetBeans form guide before any Swing UI work.
+            // The JasperReports skill is NOT pre-loaded here to save context window; Claude is
+            // told about it so it knows to fetch it on demand when the task involves reports.
+            root.put("systemPrompt",
+                "IMPORTANT: This is a NetBeans IDE session.\n"
+                + "Before creating or modifying any NetBeans Swing UI (.form or .java files), "
+                + "you MUST call resources/read with URI \"resource://netbeans-form-guide\". "
+                + "This guide has mandatory rules for .form XML format, Color encoding, "
+                + "GEN block constraints, JComboBox, ButtonGroup, JMenuBar, GridBagLayout, "
+                + "and all layout patterns. Skipping it produces .form files that cannot open in Design view.\n"
+                + "A JasperReports skill guide is also available at URI \"resource://jasperreports-skill\" — "
+                + "read it only when the task involves .jrxml files, report generation, or PDF/Excel export.");
+
             return MAPPER.writeValueAsString(root);
 
         } catch (Exception e) {
@@ -684,6 +697,7 @@ public final class ClaudeProcess {
             }
 
             root.remove("apiKeyHelper");
+            root.remove("systemPrompt");
 
             // Remove our tools from permissions.allow
             if (root.has("permissions")) {

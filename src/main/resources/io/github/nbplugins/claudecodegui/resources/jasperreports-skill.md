@@ -1,16 +1,16 @@
-# JasperReports Skill
+﻿# JasperReports Skill
 
 Guidelines for working with JasperReports in the Medicare/SAD-Viva project.
 
 ## 1. Compile-once, Cache Strategy
 
 - `.jrxml` files are compiled to `.jasper` on first run using `JasperCompileManager.compileReportToFile(jrxmlPath, jasperPath)`
-- On subsequent runs, the `.jasper` is loaded directly via `JRLoader.loadObject(jasperFile)` — no recompile
+- On subsequent runs, the `.jasper` is loaded directly via `JRLoader.loadObject(jasperFile)` ΓÇö no recompile
 - **Staleness check**: recompile only if `.jasper` is missing or older than its `.jrxml` (`jasperFile.lastModified() < jrxmlFile.lastModified()`)
 
 ## 2. Template Resolution via Classpath
 
-- `.jrxml` files live under `src/com/medicare/reports/` and are resolved at runtime using `getClass().getClassLoader().getResource(path)` — **never hardcoded absolute paths**
+- `.jrxml` files live under `src/com/medicare/reports/` and are resolved at runtime using `getClass().getClassLoader().getResource(path)` ΓÇö **never hardcoded absolute paths**
 - The sibling `.jasper` path is derived by simple string replace: `jrxmlPath.replace(".jrxml", ".jasper")`
 
 ## 3. Filling with a Live JDBC Connection
@@ -20,7 +20,7 @@ Guidelines for working with JasperReports in the Medicare/SAD-Viva project.
 
 ## 4. PDF Export
 
-- Uses `JasperExportManager.exportReportToPdfFile(jasperPrint, outputPath)` — the high-level one-liner API
+- Uses `JasperExportManager.exportReportToPdfFile(jasperPrint, outputPath)` ΓÇö the high-level one-liner API
 - PDF support requires `itext-2.1.7.jar` on the classpath (bundled in `lib/ext/`)
 
 ## 5. Excel Export via Reflection
@@ -67,7 +67,7 @@ Guidelines for working with JasperReports in the Medicare/SAD-Viva project.
 ## 11. Page Orientation & Sizing
 
 - **Portrait**: `pageWidth="595" pageHeight="842"` (A4)
-- **Landscape**: `pageWidth="842" pageHeight="595"` (A4 rotated) — used for wide tables like the patient list
+- **Landscape**: `pageWidth="842" pageHeight="595"` (A4 rotated) ΓÇö used for wide tables like the patient list
 
 ## 12. Opening the Generated File
 
@@ -90,16 +90,16 @@ Guidelines for working with JasperReports in the Medicare/SAD-Viva project.
 
 ```
 src/com/medicare/reports/
-├── patient_list.jrxml
-├── patient_list.jasper     (compiled)
-├── appointment_schedule.jrxml
-├── appointment_schedule.jasper
-├── invoice_report.jrxml
-├── invoice_report.jasper
-├── doctor_schedule.jrxml
-├── doctor_schedule.jasper
-├── revenue_summary.jrxml
-└── revenue_summary.jasper
+Γö£ΓöÇΓöÇ patient_list.jrxml
+Γö£ΓöÇΓöÇ patient_list.jasper     (compiled)
+Γö£ΓöÇΓöÇ appointment_schedule.jrxml
+Γö£ΓöÇΓöÇ appointment_schedule.jasper
+Γö£ΓöÇΓöÇ invoice_report.jrxml
+Γö£ΓöÇΓöÇ invoice_report.jasper
+Γö£ΓöÇΓöÇ doctor_schedule.jrxml
+Γö£ΓöÇΓöÇ doctor_schedule.jasper
+Γö£ΓöÇΓöÇ revenue_summary.jrxml
+ΓööΓöÇΓöÇ revenue_summary.jasper
 ```
 
 ## Key Implementation Pattern
