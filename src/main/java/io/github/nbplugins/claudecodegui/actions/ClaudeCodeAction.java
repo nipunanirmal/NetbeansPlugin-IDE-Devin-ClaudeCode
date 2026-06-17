@@ -29,7 +29,7 @@ import org.openide.util.NbBundle.Messages;
 public final class ClaudeCodeAction extends AbstractAction {
 
     private static final String ICON_CLAUDE      = "io/github/nbplugins/claudecodegui/icons/claude-icon.png";
-    private static final String ICON_DEVIN       = "io/github/nbplugins/claudecodegui/icons/devin-icon.png";
+    private static final String ICON_DEVIN       = "io/github/nbplugins/claudecodegui/icons/devin-icon-32.png";
     private static final String ICON_ANTIGRAVITY = "io/github/nbplugins/claudecodegui/icons/antigravity-icon.png";
     private static final String ICON_CURSOR      = "io/github/nbplugins/claudecodegui/icons/cursor-icon.png";
 
