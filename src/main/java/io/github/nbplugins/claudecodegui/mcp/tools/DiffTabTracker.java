@@ -20,7 +20,7 @@ public class DiffTabTracker {
 
     private static final Logger LOGGER = Logger.getLogger(DiffTabTracker.class.getName());
 
-    private static final ConcurrentHashMap<String, AsyncHandler> pendingDiffs = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, AsyncHandler<OpenDiffResult>> pendingDiffs = new ConcurrentHashMap<>();
 
     /** Futures for PreToolUse HTTP hook decisions (separate from MCP tool async handlers). */
     private static final ConcurrentHashMap<String, CompletableFuture<String>> pendingHookFutures = new ConcurrentHashMap<>();
@@ -30,7 +30,7 @@ public class DiffTabTracker {
      * @param tabName The name of the diff tab
      * @param handler Handler to call when the diff is accepted or rejected
      */
-    public static void register(String tabName, AsyncHandler handler) {
+    public static void register(String tabName, AsyncHandler<OpenDiffResult> handler) {
         LOGGER.info("Registering async handler for diff tab: " + tabName);
         pendingDiffs.put(tabName, handler);
     }
@@ -40,8 +40,8 @@ public class DiffTabTracker {
      * @param tabName The name of the diff tab
      * @return The async handler, or null if not found
      */
-    public static AsyncHandler remove(String tabName) {
-        AsyncHandler handler = pendingDiffs.remove(tabName);
+    public static AsyncHandler<OpenDiffResult> remove(String tabName) {
+        AsyncHandler<OpenDiffResult> handler = pendingDiffs.remove(tabName);
         if (handler != null) {
             LOGGER.info("Removed async handler for diff tab: " + tabName);
         }
@@ -55,7 +55,7 @@ public class DiffTabTracker {
      * @param result  the result to send
      */
     public static void setResponse(String tabName, OpenDiffResult result) {
-        AsyncHandler handler = pendingDiffs.getOrDefault(tabName, null);
+        AsyncHandler<OpenDiffResult> handler = pendingDiffs.getOrDefault(tabName, null);
         if (handler != null) {
             handler.sendResponse(result);
         } else {
@@ -72,7 +72,7 @@ public class DiffTabTracker {
      * @param tabName the name of the diff tab
      */
     public static void setRejected(String tabName) {
-        AsyncHandler handler = pendingDiffs.remove(tabName);
+        AsyncHandler<OpenDiffResult> handler = pendingDiffs.remove(tabName);
         if (handler != null) {
             LOGGER.info("Diff rejected for tab: " + tabName);
             java.util.List<org.openbeans.claude.netbeans.tools.params.Content> contentList = new java.util.ArrayList<>();

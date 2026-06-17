@@ -4,7 +4,6 @@ import io.github.nbplugins.claudecodegui.settings.ClaudeCodePreferences;
 import io.github.nbplugins.claudecodegui.ui.ClaudeSessionTab;
 import java.awt.event.ActionEvent;
 import javax.swing.AbstractAction;
-import static javax.swing.Action.SMALL_ICON;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.awt.ActionRegistration;

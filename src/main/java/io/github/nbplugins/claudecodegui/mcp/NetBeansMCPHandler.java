@@ -28,17 +28,8 @@ import org.openide.text.NbDocument;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
-import java.io.StringReader;
-import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import org.netbeans.api.diff.Diff;
-import org.netbeans.api.diff.DiffView;
-import org.netbeans.api.diff.Difference;
-import org.netbeans.api.diff.StreamSource;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.List;
@@ -64,7 +55,6 @@ import io.github.nbplugins.claudecodegui.mcp.tools.PermissionPromptTool;
 import io.github.nbplugins.claudecodegui.mcp.tools.ShowMarkdown;
 import io.github.nbplugins.claudecodegui.mcp.tools.ShowMarkdownFile;
 import org.netbeans.api.project.ui.OpenProjects;
-import org.openide.util.Lookup;
 import org.openbeans.claude.netbeans.tools.AsyncHandler;
 import org.openbeans.claude.netbeans.tools.AsyncResponse;
 import org.openbeans.claude.netbeans.tools.CheckDocumentDirty;
@@ -375,9 +365,9 @@ public class NetBeansMCPHandler {
             }
 
             // Check if result is async
-            if (result instanceof AsyncResponse) {
-                AsyncResponse asyncResponse = (AsyncResponse) result;
-                asyncResponse.setHandler(new AsyncHandler() {
+            if (result instanceof AsyncResponse<?>) {
+                AsyncResponse<?> asyncResponse = (AsyncResponse<?>) result;
+                asyncResponse.setHandler(new AsyncHandler<Object>() {
                     @Override
                     public void sendResponse(Object finalResult) {
                         sendAsyncToolResponse(requestId, finalResult, sessionQueue);
@@ -669,9 +659,6 @@ public class NetBeansMCPHandler {
         ObjectNode projectInfo = responseBuilder.objectNode();
         projectInfo.put("path", projectPath);
         projectInfo.put("name", projectDir.getName());
-
-        ArrayNode files = responseBuilder.arrayNode();
-        // projectInfo.set("files", files);
 
         return projectInfo;
     }
@@ -1125,7 +1112,7 @@ public class NetBeansMCPHandler {
      * Handles a diff tab being closed, sending the async response.
      */
     private void handleDiffTabClosed(String tabName) {
-        AsyncHandler handler = DiffTabTracker.remove(tabName);
+        AsyncHandler<OpenDiffResult> handler = DiffTabTracker.remove(tabName);
         if (handler != null) {
             LOGGER.log(Level.INFO, "Diff tab closed: {0}", tabName);
 

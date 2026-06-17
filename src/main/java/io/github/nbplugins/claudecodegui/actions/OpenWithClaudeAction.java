@@ -31,7 +31,6 @@ import org.openide.util.actions.Presenter;
 )
 @ActionRegistration(
     displayName = "#CTL_OpenWithClaudeAction",
-    iconBase = "io/github/nbplugins/claudecodegui/icons/claude-icon.png",
     lazy = false
 )
 @ActionReferences({

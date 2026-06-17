@@ -1,6 +1,5 @@
 package io.github.nbplugins.claudecodegui.controller;
 
-import com.jediterm.terminal.model.TerminalTextBuffer;
 import com.jediterm.terminal.ui.JediTermWidget;
 import com.pty4j.PtyProcess;
 import io.github.nbplugins.claudecodegui.model.ChoiceMenuModel;
