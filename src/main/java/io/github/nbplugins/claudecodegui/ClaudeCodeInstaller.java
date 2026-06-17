@@ -8,12 +8,18 @@ import io.github.nbplugins.claudecodegui.settings.ClaudeCodePreferences;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.openide.util.NbPreferences;
+import org.openide.windows.WindowManager;
 import org.netbeans.api.project.ui.OpenProjects;
 import org.openide.modules.ModuleInstall;
 import org.openide.util.Exceptions;
@@ -78,6 +84,10 @@ public class ClaudeCodeInstaller extends ModuleInstall implements PropertyChange
         // Remove any stale NetBeans lock files from previous sessions
         removeNetBeansLockFiles();
 
+        // Install Gemini CLI skill so Antigravity CLI / Gemini CLI picks up the
+        // NetBeans form rules automatically on any client machine.
+        installGeminiSkill();
+
         // Initialize components
         initializeComponents();
 
@@ -89,6 +99,22 @@ public class ClaudeCodeInstaller extends ModuleInstall implements PropertyChange
 
         // Listen for project changes to update lock file
          OpenProjects.getDefault().addPropertyChangeListener(this);
+
+        // Re-install the Gemini skill whenever NetBeans window gains focus.
+        // This covers the case where the user installs Antigravity CLI *after*
+        // the plugin is already running — a simple alt-tab to NetBeans syncs it.
+        java.awt.EventQueue.invokeLater(() -> {
+            java.awt.Frame main = WindowManager.getDefault().getMainWindow();
+            if (main != null) {
+                main.addWindowListener(new WindowAdapter() {
+                    @Override
+                    public void windowActivated(WindowEvent e) {
+                        LOGGER.fine("NetBeans activated — re-syncing Gemini skill");
+                        installGeminiSkill();
+                    }
+                });
+            }
+        });
 
         LOGGER.info("Claude Code NetBeans plugin started successfully");
     }
@@ -163,6 +189,86 @@ public class ClaudeCodeInstaller extends ModuleInstall implements PropertyChange
                 Exceptions.printStackTrace(e);
             }
         });
+    }
+
+    /**
+     * Writes the bundled NetBeans form guide as a Gemini/Antigravity skill to
+     * multiple known locations so that the rules are picked up regardless of
+     * which Antigravity product the user is running (CLI, IDE, or both).
+     * <p>
+     * Target locations (in order of preference):
+     * <ol>
+     *   <li>{@code ~/.gemini/config/plugins/netbeans-forms/SKILL.md} — shared plugin format</li>
+     *   <li>{@code ~/.gemini/skills/netbeans-forms/SKILL.md} — shared skills (all Agy tools)</li>
+     *   <li>{@code ~/.gemini/antigravity-cli/skills/netbeans-forms/SKILL.md} — CLI-only global</li>
+     * </ol>
+     * The file is (re-)written on every plugin startup so that it stays in sync
+     * with the bundled guide as the plugin is updated.
+     */
+    private void installGeminiSkill() {
+        RP.post(() -> {
+            try {
+                InputStream is = getClass().getResourceAsStream(
+                    "/io/github/nbplugins/claudecodegui/resources/netbeans-form-guide.md");
+                if (is == null) {
+                    LOGGER.warning("netbeans-form-guide.md not found in JAR — Gemini skill not installed");
+                    return;
+                }
+                String guideContent = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                is.close();
+
+                String skillContent = "---\n"
+                    + "name: netbeans-forms\n"
+                    + "description: \"NetBeans GUI Designer rules for .form + .java file pairs. "
+                    + "ACTIVATE automatically whenever the user mentions NetBeans, .form files, "
+                    + "JFrame, JPanel, Swing UI, initComponents, GEN-BEGIN, or Design View. "
+                    + "Also activate when working in any NetBeans project (contains pom.xml or nbproject/ folder). "
+                    + "Read this BEFORE creating or editing any .java or .form file.\"\n"
+                    + "---\n\n"
+                    + guideContent;
+
+                String pluginJson = "{\n"
+                    + "  \"name\": \"netbeans-forms\",\n"
+                    + "  \"version\": \"1.0.0\",\n"
+                    + "  \"description\": \"NetBeans GUI Designer form rules for .form + .java file pairs\",\n"
+                    + "  \"author\": {\n"
+                    + "    \"name\": \"Claude Code NetBeans Plugin\"\n"
+                    + "  },\n"
+                    + "  \"keywords\": [\"netbeans\", \"swing\", \"gui\", \"forms\", \".form\", \".java\"]\n"
+                    + "}\n";
+
+                String home = System.getProperty("user.home");
+
+                // 1. Shared plugin location (~/.gemini/config/plugins/)
+                Path pluginDir = Paths.get(home, ".gemini", "config", "plugins", "netbeans-forms");
+                Files.createDirectories(pluginDir);
+                writeSkillFile(pluginDir.resolve("SKILL.md"), skillContent);
+                writeSkillFile(pluginDir.resolve("plugin.json"), pluginJson);
+                LOGGER.info("Gemini skill installed (plugin): " + pluginDir);
+
+                // 2. Shared skills location (~/.gemini/skills/) — picked up by all Agy tools
+                Path sharedDir = Paths.get(home, ".gemini", "skills", "netbeans-forms");
+                Files.createDirectories(sharedDir);
+                writeSkillFile(sharedDir.resolve("SKILL.md"), skillContent);
+                LOGGER.info("Gemini skill installed (shared): " + sharedDir);
+
+                // 3. CLI-only location (~/.gemini/antigravity-cli/skills/)
+                Path cliDir = Paths.get(home, ".gemini", "antigravity-cli", "skills", "netbeans-forms");
+                Files.createDirectories(cliDir);
+                writeSkillFile(cliDir.resolve("SKILL.md"), skillContent);
+                LOGGER.info("Gemini skill installed (CLI): " + cliDir);
+
+            } catch (IOException e) {
+                LOGGER.log(Level.WARNING, "Could not install Gemini skill file", e);
+            }
+        });
+    }
+
+    /** Helper that writes a string to a file, creating parent dirs if needed. */
+    private static void writeSkillFile(Path file, String content) throws IOException {
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, content, StandardCharsets.UTF_8,
+            StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
     }
 
     /**

@@ -221,6 +221,10 @@ public class NetBeansMCPHandler {
         serverInfo.put("version", "1.0.0");
         result.set("serverInfo", serverInfo);
 
+        // MCP 'instructions' field — delivered to every AI client as a system-level
+        // prompt at session start, no URI resolution or tool call required.
+        result.put("instructions", loadFormGuideInstructions());
+
         return result;
     }
 
@@ -246,6 +250,34 @@ public class NetBeansMCPHandler {
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Failed to send initialized notification", e);
         }
+    }
+
+    /**
+     * Loads the NetBeans form guide from the bundled resource and returns it as
+     * a string suitable for embedding in the MCP {@code initialize} response's
+     * {@code instructions} field.  Falls back to a compact inline summary if
+     * the resource is unavailable (e.g., running outside the packaged JAR).
+     */
+    private String loadFormGuideInstructions() {
+        try {
+            InputStream is = getClass().getResourceAsStream(
+                "/io/github/nbplugins/claudecodegui/resources/netbeans-form-guide.md");
+            if (is != null) {
+                String content = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                is.close();
+                return content;
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Could not load netbeans-form-guide.md for instructions", e);
+        }
+        // Fallback: compact inline rules so the AI always has the critical constraints
+        return "NETBEANS .form/.java RULES\n"
+             + "1. Always create TWO files: ClassName.java + ClassName.form\n"
+             + "2. .form Color: <Color red=\"ff\" green=\"b9\" blue=\"4c\" type=\"rgb\"/> — lowercase hex, type=\"rgb\" required, NO alpha\n"
+             + "3. listenerGenerationStyle=0 in AuxValues (anonymous inner classes)\n"
+             + "4. .java GEN-BEGIN:initComponents block: instantiate all variables first, then properties, then layout\n"
+             + "5. JPanel root: type=\"org.netbeans.modules.form.forminfo.JPanelFormInfo\"\n"
+             + "6. JFrame root: type=\"org.netbeans.modules.form.forminfo.JFrameFormInfo\"";
     }
 
     /**
