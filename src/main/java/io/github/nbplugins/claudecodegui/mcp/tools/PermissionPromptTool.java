@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import io.github.nbplugins.claudecodegui.model.EditMode;
+import io.github.nbplugins.claudecodegui.model.ClaudeSessionModel;
 import io.github.nbplugins.claudecodegui.ui.FileDiffOpener;
 import org.openbeans.claude.netbeans.tools.AsyncHandler;
 import org.openbeans.claude.netbeans.tools.AsyncResponse;
@@ -121,6 +123,13 @@ public class PermissionPromptTool implements Tool<PermissionPromptTool.Params, A
             return syncDeny("Cannot compute diff: " + e.getMessage());
         }
 
+        // Respect edit mode — auto-allow if ACCEPT_EDITS or higher
+        EditMode activeMode = getActiveEditModeForFile(filePath);
+        if (activeMode.ordinal() >= EditMode.ACCEPT_EDITS.ordinal()) {
+            LOGGER.info(activeMode.key() + " mode — auto-allowing permission_prompt for: " + filePath);
+            return syncAllow();
+        }
+
         String tabName = "Diff: " + new File(filePath).getName();
         final String finalTabName = resolveUniqueTabName(tabName);
 
@@ -152,6 +161,26 @@ public class PermissionPromptTool implements Tool<PermissionPromptTool.Params, A
     // -----------------------------------------------------------------------
     // Before / after computation
     // -----------------------------------------------------------------------
+
+    /**
+     * Returns the most-permissive {@link EditMode} registered for any session
+     * whose working directory is an ancestor of {@code filePath}.
+     * Falls back to {@link EditMode#DEFAULT} when no match is found.
+     */
+    private static EditMode getActiveEditModeForFile(String filePath) {
+        if (filePath == null) return EditMode.DEFAULT;
+        String absFile = new java.io.File(filePath).getAbsolutePath();
+        EditMode best = EditMode.DEFAULT;
+        for (var entry : ClaudeSessionModel.EDIT_MODE_REGISTRY.entrySet()) {
+            String absDir = new java.io.File(entry.getKey()).getAbsolutePath();
+            if (absFile.startsWith(absDir + java.io.File.separator) || absFile.equals(absDir)) {
+                if (entry.getValue().ordinal() > best.ordinal()) {
+                    best = entry.getValue();
+                }
+            }
+        }
+        return best;
+    }
 
     private static boolean isFileEditTool(String toolName) {
         return "Edit".equals(toolName) || "Write".equals(toolName) || "MultiEdit".equals(toolName);
