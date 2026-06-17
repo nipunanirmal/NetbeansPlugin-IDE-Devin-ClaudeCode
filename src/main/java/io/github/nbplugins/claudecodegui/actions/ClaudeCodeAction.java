@@ -59,7 +59,7 @@ public final class ClaudeCodeAction extends AbstractAction {
             iconPath32 = ICON_CLAUDE_32;
             label      = "Claude Code";
         }
-        putValue("iconBase", iconPath);
+        putValue("iconBase", iconPath32);        // 32px base — NetBeans toolbar scales down crisply
         putValue(SMALL_ICON, ImageUtilities.loadImageIcon(iconPath, false));
         putValue(LARGE_ICON_KEY, ImageUtilities.loadImageIcon(iconPath32, false));
         putValue(SHORT_DESCRIPTION, label);

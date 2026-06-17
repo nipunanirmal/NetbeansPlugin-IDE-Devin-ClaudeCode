@@ -64,8 +64,9 @@ public class ClaudeCodeInstaller extends ModuleInstall implements PropertyChange
         if (userDir != null) {
             Path componentsDir = Paths.get(userDir, "config", "Windows2Local", "Components");
             V1MigrationHelper.removeStaleComponentSettings(componentsDir,
-                    V1MigrationHelper.OLD_PKG,  // pre-1.0 package rename (issue #146)
-                    "FileDiffOpener$1");         // renamed to FileDiffOpener$DiffTopComponent in 1.2.13
+                    V1MigrationHelper.OLD_PKG,   // pre-1.0 package rename (issue #146)
+                    V1MigrationHelper.NEW_PKG,   // current package — refresh stale serialdata
+                    "FileDiffOpener$1");          // renamed to FileDiffOpener$DiffTopComponent in 1.2.13
         }
 
         // Migrate preferences from old package paths (one-time, after package rename in 1.0)

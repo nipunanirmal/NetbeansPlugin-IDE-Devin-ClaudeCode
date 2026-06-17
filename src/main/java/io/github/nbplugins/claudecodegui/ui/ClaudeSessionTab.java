@@ -130,6 +130,12 @@ public class ClaudeSessionTab extends TopComponent
         return ICON;
     }
 
+    /** Re-applies the current CLI icon so preference changes are reflected
+     *  without closing and re-opening the tab. */
+    private void refreshIcon() {
+        setIcon(ImageUtilities.loadImage(iconForCli(), true));
+    }
+
     // -------------------------------------------------------------------------
     // Edit mode constants
     // -------------------------------------------------------------------------
@@ -347,7 +353,7 @@ public class ClaudeSessionTab extends TopComponent
         add(selectorPanel, BorderLayout.CENTER);
         add(statusBar,     BorderLayout.SOUTH);
 
-        setIcon(ImageUtilities.loadImage(iconForCli(), true));
+        refreshIcon();
         updateDisplayName(dir);
         model.addListener(this);
     }
@@ -427,6 +433,7 @@ public class ClaudeSessionTab extends TopComponent
     @Override
     protected void componentOpened() {
         super.componentOpened();
+        refreshIcon();
         String path        = savedPath != null ? savedPath : pathToRestore;
         String profileName = savedProfileName;
         String extraCliArgs = savedExtraCliArgs;
@@ -473,6 +480,7 @@ public class ClaudeSessionTab extends TopComponent
     @Override
     protected void componentActivated() {
         super.componentActivated();
+        refreshIcon();
         requestFocusOnInput();
     }
 
