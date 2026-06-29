@@ -1,4 +1,4 @@
-# 1.2
+# 1.2.25 (2026-06-29)
 
 - Fixed choice menu not appearing when option descriptions span more than 3 terminal lines
 - Fixed disabled models (e.g. `Fable (disabled)`) appearing in the model selector combo with an error message as their name
