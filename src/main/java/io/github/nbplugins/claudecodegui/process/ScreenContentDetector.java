@@ -156,11 +156,13 @@ public final class ScreenContentDetector {
                 continuationCount = 0;
                 // Option "1" is always the first — stop collecting here
                 if ("1".equals(opt.response())) break;
+            } else if (isSeparatorLine(trimmed)) {
+                // structural separator between option groups — don't count toward continuationCount
             } else if (!trimmed.isBlank()) {
                 continuationCount++;
-                if (continuationCount > 3) {
+                if (continuationCount > 8) {
                     LOG.fine(tag + "[ScreenContentDetector] stopped upward scan at row " + i
-                            + " (continuationCount>3): " + trimmed);
+                            + " (continuationCount>8): " + trimmed);
                     break;
                 }
             }
@@ -560,13 +562,14 @@ public final class ScreenContentDetector {
             if (INPUT_PROMPT.matcher(line.trim()).find()) {
                 boolean separatorAbove = i > 0 && (
                         isSeparatorLine(lines.get(i - 1).trim()) ||
-                        PLAN_NAME_DASHES_PATTERN.matcher(lines.get(i - 1).trim()).find()
+                        PLAN_NAME_DASHES_PATTERN.matcher(lines.get(i - 1).trim()).find() ||
+                        isSeparatorLineWithLabel(lines.get(i - 1).trim())
                 );
                 // Autocomplete popup lines may appear between ❯ and the separator below —
                 // scan up to 5 lines down to find it.
                 boolean separatorBelow = false;
                 for (int j = i + 1; j < lines.size() && j <= i + 5; j++) {
-                    if (isSeparatorLine(lines.get(j).trim())) {
+                    if (isSeparatorLine(lines.get(j).trim()) || isSeparatorLineWithLabel(lines.get(j).trim())) {
                         separatorBelow = true;
                         break;
                     }
@@ -781,5 +784,26 @@ public final class ScreenContentDetector {
     private static boolean isSeparatorLine(String trimmed) {
         if (trimmed.length() < 4) return false;
         return trimmed.chars().allMatch(c -> c == '\u2500' || c == '\u2501' || c == '\u2014' || c == '-' || c == '=');
+    }
+
+    private static boolean isBoxDash(int c) {
+        return c == '\u2500' || c == '\u2501' || c == '\u2014' || c == '-' || c == '=';
+    }
+
+    /**
+     * Returns true for the input-box top border that embeds a label (e.g. git branch name):
+     * "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 refactor-menu-reorder-e9.5-e9.8 \u2500\u2500".
+     * {@link #isSeparatorLine} rejects it (embedded text) and
+     * {@link #PLAN_NAME_DASHES_PATTERN} rejects labels with dots or slashes, so without this
+     * helper {@code detectSessionState} would mis-classify the idle screen as WORKING.
+     * A line qualifies when it starts and ends with box-drawing dashes and those dashes
+     * make up at least half of its characters.
+     */
+    private static boolean isSeparatorLineWithLabel(String trimmed) {
+        if (trimmed.length() < 4) return false;
+        if (!isBoxDash(trimmed.charAt(0)) || !isBoxDash(trimmed.charAt(1))) return false;
+        if (!isBoxDash(trimmed.charAt(trimmed.length() - 1))) return false;
+        long dashes = trimmed.chars().filter(ScreenContentDetector::isBoxDash).count();
+        return dashes * 2 >= trimmed.length();
     }
 }
